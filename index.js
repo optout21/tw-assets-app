@@ -87,7 +87,7 @@ async function handleCallback(request, response) {
     access_token = token;
     console.log(`Saved token: ${access_token}`);
 
-    const redir = `/app.html?token=${access_token}`;
+    const redir = `/index.html?token=${access_token}`;
     response.writeHead(300, {'Location': redir});
     response.end('');
 }

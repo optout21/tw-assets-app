@@ -1,13 +1,172 @@
 <html>
-  <head>
-  </head>
-  <body>
-    <p>
-      Well, hello there!
-    </p>
-    <p>
-      We're going to now talk to the GitHub API. Ready?
-      <a href="https://github.com/login/oauth/authorize?scope=user:email&client_id=b9ff96b9717574ee8189">Click here</a> to begin!</a>
-    </p>
-  </body>
+
+<head>
+</head>
+
+<script type="module">
+    import { request } from "https://cdn.skypack.dev/@octokit/request";
+    window.request = request;
+</script>
+
+<script>
+    const clientId = "b9ff96b9717574ee8189";
+    var token = null;
+    var loginname = null;
+    var repo = null;
+
+    const mainRepoOwner = "trustwallet";
+    const mainRepoName = "assets";
+    const mainRepoFullName = mainRepoOwner + "/" + mainRepoName;
+    const mainRepoUrl = `https://github.com/${mainRepoFullName}.git`;
+
+    function loginActionUrl() {
+        return `https://github.com/login/oauth/authorize?scope=user:email&client_id=${clientId}`;
+    }
+
+    function authHeaders() {
+        return { authorization: `token ${token}` };
+    }
+
+    async function getUser() {
+        const result = await request("GET /user", { headers: authHeaders() });
+        return result.data;
+    }
+
+    function refreshUser() {
+        document.getElementById("user").innerHTML = "-";
+        document.getElementById("repo").innerHTML = "-";
+        document.getElementById("prs").innerHTML = "-";
+
+        if (!token) {
+            document.getElementById("user").innerHTML = `Not logged in, <a href="${loginActionUrl()}">log in</a>`;
+            return;
+        }
+        document.getElementById("user").innerHTML = `User: ${loginname} <a href="#" onclick="logout();">Logout</a>`;
+
+        if (!repo) {
+            document.getElementById("repo").innerHTML = `No fork of assets found for user ${loginname}.  Please fork the <a href="${mainRepoUrl}" target="_blank">main Assets repo</a>`;
+            return;
+        }
+
+        document.getElementById("repo").innerHTML = `Repo: <a href="https://github.com/${loginname}/${repo}.git" target="_blank">${loginname}/${repo}</a>`;
+    }
+
+    async function checkUser() {
+        if (!token) {
+            return false;
+        }
+        const user = await getUser();
+        if (!user || !user.login) {
+            return false;
+        }
+        loginname = user.login;
+        return true;
+    }
+
+    function clearUser() {
+        token = null;
+        loginname = null;
+        repo = null;
+    }
+
+    async function logout() {
+        clearUser();
+        refreshUser();
+    }
+
+    async function getUserRepos() {
+        const result = await request("GET /user/repos", { headers: authHeaders() });
+        return result.data;
+    }
+
+    async function getRepo(owner, repo) {
+        const result = await request("GET /repos/:owner/:repo", {
+            headers: authHeaders(),
+            owner: owner,
+            repo: repo
+        });
+        return result.data;
+    }
+
+    async function checkRepo() {
+        if (!token || !loginname) {
+            return;
+        }
+        const repos = await getUserRepos();
+        if (!repos || repos.length == 0) {
+            return false;
+        }
+        // first try under 'assets' name
+        for (const r of repos) {
+            if (!repo && r.fork && r.name === mainRepoName) {
+                const r2 = await getRepo(loginname, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    repo = r.name;
+                }
+            }
+        }
+        // try again all others
+        for (const r of repos) {
+            if (!repo && r.fork) {
+                const r2 = await getRepo(loginname, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    repo = r.name;
+                }
+            }
+        }
+        return repo ? true : false;
+    }
+
+    async function getPulls(owner, repo) {
+        const result = await request("GET /repos/:owner/:repo/pulls", {
+            headers: authHeaders(),
+            owner: owner,
+            repo: repo
+        });
+        return result.data;
+    }
+
+    async function checkPRs() {
+        document.getElementById("prs").innerHTML = "-";
+        if (!loginname || !repo) {
+            return;
+        }
+        const pulls = await getPulls(loginname, repo);
+        var t = "";
+        console.log(pulls);
+        pulls.forEach(pr => t += pr.number + " ");
+        document.getElementById("prs").innerHTML = "PRs: " + t;
+    }
+
+    function getTokenQP() {
+        var urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get("token");
+    }
+
+    async function start() {
+        clearUser();
+        refreshUser();
+        token = getTokenQP();
+        if (!await checkUser()) {
+            refreshUser();
+            return;
+        }
+        if (!await checkRepo()) {
+            refreshUser();
+            return;
+        }
+        refreshUser();
+        await checkPRs();
+    }
+</script>
+
+<body onload="start()">
+    <div>
+        TW Assets App
+    </div>
+    <div id="user">-</div>
+    <div id="repo">-</div>
+    <div id="prs">-</div>
+</body>
+
 </html>
