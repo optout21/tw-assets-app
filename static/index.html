@@ -11,7 +11,7 @@
 <script>
     const appName = 'tw-assets-app';
     const clientId = "b9ff96b9717574ee8189";
-    
+
     var token = null;
     var loginname = null;
     var repo = null;
@@ -141,19 +141,160 @@
         document.getElementById("prs").innerHTML = "PRs: " + t;
     }
 
-    async function createPull() {
+    async function getBranchRef(branch) {
+        const result = await request("GET /repos/{owner}/{repo}/git/ref/{ref}", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            ref: "heads/" + branch
+        });
+        return result.data.object.sha;
+    }
+
+    async function createBranch(branchName) {
+        const ref = await getBranchRef("master");
+        const result = await request("POST /repos/:owner/:repo/git/refs", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            ref: `refs/heads/${branchName}`,
+            sha: ref
+        });
+        return result.data.ref;
+    }
+
+    async function createPull(branchName, debugLocalRepoOnly) {
         const title = "Test PR cc";
+        var owner1 = mainRepoOwner;
+        var repo1 = mainRepoName;
+        if (debugLocalRepoOnly) {
+            owner1 = loginname;
+            repo1 = repo;
+        }
         const result = await request("POST /repos/:owner/:repo/pulls", {
             headers: authHeaders(),
-            owner: mainRepoOwner,
-            repo: mainRepoName,
+            owner: owner1,
+            repo: repo1,
             title: title,
-            head: loginname + ":" + "branch11",
+            head: loginname + ":" + branchName,
             base: "master",
             body: "This is a test" + prBodyFooter,
             maintainer_can_modify: true,
             draft: true
         });
+        return result.data.number;
+    }
+
+    function newBranchName() {
+        const today = new Date();
+        const date = (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0') +
+            '-' + today.getHours().toString().padStart(2, '0') + today.getMinutes().toString().padStart(2, '0') + today.getSeconds().toString().padStart(2, '0');
+        return "br" + date;
+    }
+
+    async function createBlob(content) {
+        const result = await request("POST /repos/:owner/:repo/git/blobs", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            content: content,
+            encoding: "utf-8"
+        });
+        return result.data.sha;
+    }
+
+    async function createFiles(basePath, subFolder) {
+        var fileInfos = [];
+
+        const folder = basePath + "/" + subFolder;
+        //fileInfos.push({ path: folder, mode: "040000", type: "blob" });
+
+        const content1 = "[PNG]";
+        const sha1 = await createBlob(content1);
+        if (!sha1) {
+            return null;
+        }
+        fileInfos.push({ path: folder + "/logo.png", sha: sha1, mode: "100644", type: "blob" });
+
+        const content2 = JSON.stringify({name: "TEST", short_description: "short test desc"});
+        fileInfos.push({ path: folder + "/info.json", content: content2, mode: "100644", type: "blob" });
+
+        return fileInfos;
+    }
+
+    async function createTree(baseSha, fileInfos) {
+        const result = await request("POST /repos/:owner/:repo/git/trees", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            tree: fileInfos,
+            base_tree: baseSha
+        });
+        return result.data.sha;
+    }
+
+    async function createCommit(baseSha, tree) {
+        const result = await request("POST /repos/:owner/:repo/git/commits", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            message: "Adding new asset",
+            tree: tree,
+            parents: [baseSha]
+        });
+        return result.data.sha;
+    }
+
+    async function updateReference(ref, sha) {
+        const result = await request("POST /repos/:owner/:repo/git/refs/:ref", {
+            headers: authHeaders(),
+            owner: loginname,
+            repo: repo,
+            ref: ref,
+            sha: sha
+        });
+        return result.data.object.sha;
+    }
+
+    async function createBranchAndPull() {
+        const branchName = newBranchName();
+        const branchRef = await createBranch(branchName);
+        if (!branchRef) {
+            console.log(`Could not create branch ${branchName}`);
+            return;
+        }
+
+        const fileInfos = await createFiles("blockchains/ethereum/assets", "0x63A6da104C6a08dfeB50D13a7488F67bC98Cc41f");
+        if (!fileInfos || fileInfos.length == 0) {
+            console.log(`Could not create files`);
+            return;
+        }
+
+        const branchSha = await getBranchRef(branchName);
+        if (!branchSha) {
+            console.log(`Could not get ref for branch ${branchName}`);
+            return;
+        }
+
+        const tree = await createTree(branchSha, fileInfos);
+        if (!tree) {
+            console.log(`Could not create tree with files`);
+            return;
+        }
+
+        const commit = await createCommit(branchSha, tree);
+        if (!commit) {
+            console.log(`Could not create commit`);
+            return;
+        }
+
+        const newBranchSha = await updateReference("heads/" + branchName, commit);
+        if (!newBranchSha) {
+            console.log(`Could not update branch ${branchName} to commit ${commit}`);
+            return;
+        }
+
+        const pullNumber = await createPull(branchName, false);
     }
 
     function getTokenQP() {
@@ -185,7 +326,7 @@
     <div id="user">-</div>
     <div id="repo">-</div>
     <div id="prs">-</div>
-    <a href="#" onclick="createPull()">Create PR</a>
+    <a href="#" onclick="createBranchAndPull()">Create PR</a>
 </body>
 
 </html>
