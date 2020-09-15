@@ -9,7 +9,9 @@
 </script>
 
 <script>
+    const appName = 'tw-assets-app';
     const clientId = "b9ff96b9717574ee8189";
+    
     var token = null;
     var loginname = null;
     var repo = null;
@@ -18,9 +20,11 @@
     const mainRepoName = "assets";
     const mainRepoFullName = mainRepoOwner + "/" + mainRepoName;
     const mainRepoUrl = `https://github.com/${mainRepoFullName}.git`;
+    const appScopes = "public_repo%20read:user";
+    const prBodyFooter = `\n\nPR created by ${appName}`;
 
     function loginActionUrl() {
-        return `https://github.com/login/oauth/authorize?scope=user:email&client_id=${clientId}`;
+        return `https://github.com/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
     }
 
     function authHeaders() {
@@ -133,9 +137,23 @@
         }
         const pulls = await getPulls(loginname, repo);
         var t = "";
-        console.log(pulls);
         pulls.forEach(pr => t += pr.number + " ");
         document.getElementById("prs").innerHTML = "PRs: " + t;
+    }
+
+    async function createPull() {
+        const title = "Test PR cc";
+        const result = await request("POST /repos/:owner/:repo/pulls", {
+            headers: authHeaders(),
+            owner: mainRepoOwner,
+            repo: mainRepoName,
+            title: title,
+            head: loginname + ":" + "branch11",
+            base: "master",
+            body: "This is a test" + prBodyFooter,
+            maintainer_can_modify: true,
+            draft: true
+        });
     }
 
     function getTokenQP() {
@@ -162,11 +180,12 @@
 
 <body onload="start()">
     <div>
-        TW Assets App
+        <a href="/">TW Assets App</a>
     </div>
     <div id="user">-</div>
     <div id="repo">-</div>
     <div id="prs">-</div>
+    <a href="#" onclick="createPull()">Create PR</a>
 </body>
 
 </html>
