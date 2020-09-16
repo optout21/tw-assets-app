@@ -1,6 +1,7 @@
 <html>
 
 <head>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <script type="module">
@@ -38,21 +39,20 @@
 
     function refreshUser() {
         document.getElementById("user").innerHTML = "-";
-        document.getElementById("repo").innerHTML = "-";
-        document.getElementById("prs").innerHTML = "-";
 
         if (!token) {
             document.getElementById("user").innerHTML = `Not logged in, <a href="${loginActionUrl()}">log in</a>`;
             return;
         }
-        document.getElementById("user").innerHTML = `User: ${loginname} <a href="#" onclick="logout();">Logout</a>`;
-
+        var html = `user: <a href="https://github.com/${loginname}/" target="_blank">${loginname}</a>\n`;
         if (!repo) {
-            document.getElementById("repo").innerHTML = `No fork of assets found for user ${loginname}.  Please fork the <a href="${mainRepoUrl}" target="_blank">main Assets repo</a>`;
-            return;
+            html += `No fork of assets found for user ${loginname}.  Please fork the <a href="${mainRepoUrl}" target="_blank">main Assets repo</a>\n`;
+        } else {
+            html += `repo: <a href="https://github.com/${loginname}/${repo}.git" target="_blank">${loginname}/${repo}</a>\n`;
         }
+        html += `<a href="#" onclick="logout();">Logout</a>\n`;
 
-        document.getElementById("repo").innerHTML = `Repo: <a href="https://github.com/${loginname}/${repo}.git" target="_blank">${loginname}/${repo}</a>`;
+        document.getElementById("user").innerHTML = html;
     }
 
     async function checkUser() {
@@ -71,6 +71,12 @@
         token = null;
         loginname = null;
         repo = null;
+        document.getElementById("log").value = "";
+        document.getElementById("contract").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("website").value = "";
+        document.getElementById("short_description").value = "";
+        document.getElementById("explorer").value = "";
     }
 
     async function logout() {
@@ -118,7 +124,11 @@
                 }
             }
         }
-        return repo ? true : false;
+        if (!repo) {
+            return false;
+        }
+        addLog(`User ${loginname}, fork repo ${repo}`);
+        return true;
     }
 
     async function getPulls(owner, repo) {
@@ -130,15 +140,20 @@
         return result.data;
     }
 
+    function addLog(message) {
+        console.log(message);
+        const newvalue = document.getElementById("log").value + message + "\n"
+        document.getElementById("log").value = newvalue;
+    }
+
     async function checkPRs() {
-        document.getElementById("prs").innerHTML = "-";
         if (!loginname || !repo) {
             return;
         }
         const pulls = await getPulls(loginname, repo);
         var t = "";
         pulls.forEach(pr => t += pr.number + " ");
-        document.getElementById("prs").innerHTML = "PRs: " + t;
+        addLog("PRs in fork: " + t);
     }
 
     async function getBranchRef(branch) {
@@ -163,8 +178,8 @@
         return result.data.ref;
     }
 
-    async function createPull(branchName, debugLocalRepoOnly) {
-        const title = "Test PR cc";
+    async function createPull(branchName, tokenName, debugLocalRepoOnly) {
+        const title = `Add ${tokenName}`;
         var owner1 = mainRepoOwner;
         var repo1 = mainRepoName;
         if (debugLocalRepoOnly) {
@@ -178,9 +193,9 @@
             title: title,
             head: loginname + ":" + branchName,
             base: "master",
-            body: "This is a test" + prBodyFooter,
+            body: `Info for token ${tokenName} is added.` + "\n\n" + prBodyFooter,
             maintainer_can_modify: true,
-            draft: true
+            draft: false
         });
         return result.data.number;
     }
@@ -203,11 +218,10 @@
         return result.data.sha;
     }
 
-    async function createFiles(basePath, subFolder) {
+    async function createFiles(basePath, subFolder, infoJsonContent) {
         var fileInfos = [];
 
         const folder = basePath + "/" + subFolder;
-        //fileInfos.push({ path: folder, mode: "040000", type: "blob" });
 
         const content1 = "[PNG]";
         const sha1 = await createBlob(content1);
@@ -216,8 +230,7 @@
         }
         fileInfos.push({ path: folder + "/logo.png", sha: sha1, mode: "100644", type: "blob" });
 
-        const content2 = JSON.stringify({name: "TEST", short_description: "short test desc"});
-        fileInfos.push({ path: folder + "/info.json", content: content2, mode: "100644", type: "blob" });
+        fileInfos.push({ path: folder + "/info.json", content: infoJsonContent, mode: "100644", type: "blob" });
 
         return fileInfos;
     }
@@ -233,12 +246,12 @@
         return result.data.sha;
     }
 
-    async function createCommit(baseSha, tree) {
+    async function createCommit(baseSha, tree, tokenName) {
         const result = await request("POST /repos/:owner/:repo/git/commits", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
-            message: "Adding new asset",
+            message: `Adding new token ${tokenName}`,
             tree: tree,
             parents: [baseSha]
         });
@@ -256,45 +269,85 @@
         return result.data.object.sha;
     }
 
+    function buildInfoJson() {
+        return JSON.stringify({
+            name: document.getElementById("name").value,
+            website: document.getElementById("website").value,
+            short_description: document.getElementById("short_description").value,
+            explorer: document.getElementById("explorer").value
+        }, null, 2);
+    }
+
+    async function fillWithDummyData() {
+        const contract = "0xF784682C82526e245F50975190EF0fff4E4fC077"
+        document.getElementById("name").value = "LegumeToken";
+        document.getElementById("contract").value = contract;
+        document.getElementById("website").value = "https://legume.fi";
+        document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
+        document.getElementById("explorer").value = `https://etherscan.io/token/${contract}`;
+    }
+
     async function createBranchAndPull() {
+        if (!loginname) {
+            alert("Log in first!");
+            return;
+        }
+        const contract = document.getElementById("contract").value;
+        const name = document.getElementById("name").value;
+        if (!contract || !name) {
+            alert("Fill in all the fields!");
+            return;
+        }
+        const infoJson = buildInfoJson();
         const branchName = newBranchName();
+
+        addLog(`contract: ${contract}  branch ${branchName}`);
+
         const branchRef = await createBranch(branchName);
         if (!branchRef) {
-            console.log(`Could not create branch ${branchName}`);
+            addLog(`Could not create branch ${branchName}`);
             return;
         }
+        addLog(`Created branch ${loginname}/${repo}/${branchName}`);
 
-        const fileInfos = await createFiles("blockchains/ethereum/assets", "0x63A6da104C6a08dfeB50D13a7488F67bC98Cc41f");
+        const fileInfos = await createFiles("blockchains/ethereum/assets", contract, infoJson);
         if (!fileInfos || fileInfos.length == 0) {
-            console.log(`Could not create files`);
+            addLog(`Could not create files`);
             return;
         }
+        addLog(`Created ${fileInfos.length} new files`);
 
         const branchSha = await getBranchRef(branchName);
         if (!branchSha) {
-            console.log(`Could not get ref for branch ${branchName}`);
+            addLog(`Could not get ref for branch ${branchName}`);
             return;
         }
 
         const tree = await createTree(branchSha, fileInfos);
         if (!tree) {
-            console.log(`Could not create tree with files`);
+            addLog(`Could not create tree with files`);
             return;
         }
 
-        const commit = await createCommit(branchSha, tree);
+        const commit = await createCommit(branchSha, tree, name);
         if (!commit) {
-            console.log(`Could not create commit`);
+            addLog(`Could not create commit`);
             return;
         }
+        addLog(`Created new commit ${commit}`);
 
         const newBranchSha = await updateReference("heads/" + branchName, commit);
         if (!newBranchSha) {
-            console.log(`Could not update branch ${branchName} to commit ${commit}`);
+            addLog(`Could not update branch ${branchName} to commit ${commit}`);
             return;
         }
 
-        const pullNumber = await createPull(branchName, false);
+        const pullNumber = await createPull(branchName, name, false);
+        if (!pullNumber) {
+            addLog(`Could not create PR`);
+            return;
+        }
+        addLog(`Created PR ${pullNumber}`);
     }
 
     function getTokenQP() {
@@ -321,12 +374,62 @@
 
 <body onload="start()">
     <div>
-        <a href="/">TW Assets App</a>
+        <span>
+            <a>TW Assets App</a>
+            <img src="favicon.ico" height="20" />
+        </span>
+        <span id="user">-</span>
     </div>
-    <div id="user">-</div>
-    <div id="repo">-</div>
-    <div id="prs">-</div>
-    <a href="#" onclick="createBranchAndPull()">Create PR</a>
+    <div>
+        <div>
+            <h2>Add ERC20 Token</h2>
+            Please fill in the token/project details
+        </div>
+        <div>
+            <table>
+                <tr>
+                    <td>Name:</td>
+                    <td><input class="input" id="name" placeholder="LegumeToken" size="30" /></td>
+                </tr>
+                <tr>
+                    <td>Contract addess:</td>
+                    <td><input class="input" id="contract" placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077"
+                            size="60" /></td>
+                </tr>
+                <tr>
+                    <td>Website:</td>
+                    <td><input class="input" id="website" placeholder="https://legume.fi" size="60" /></td>
+                </tr>
+                <tr>
+                    <td>Explorer:</td>
+                    <td><input class="input" id="explorer"
+                            placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                            size="60" /></td>
+                </tr>
+                <tr>
+                    <td>Short description:</td>
+                    <td><textarea class="input" id="short_description"
+                            placeholder="This is the best-tasting DeFi finance project." cols="70" rows="2"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <button class="button" type="button" onclick="createBranchAndPull()">Create PR</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div>
+        <hr>
+        <div>
+            <a href="#" onclick="fillWithDummyData()">Fill test data</a>
+        </div>
+        <div>
+            <textarea id="log" class="textarea-log" cols="80" rows="8" readonly="true" placeholder="log"></textarea>
+        </div>
+    </div>
 </body>
 
 </html>
