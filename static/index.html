@@ -67,20 +67,25 @@
         return true;
     }
 
-    function clearUser() {
-        token = null;
-        loginname = null;
-        repo = null;
-        document.getElementById("log").value = "";
+    async function clearForm() {
         document.getElementById("contract").value = "";
         document.getElementById("name").value = "";
+        await loadLogo("");
         document.getElementById("website").value = "";
         document.getElementById("short_description").value = "";
         document.getElementById("explorer").value = "";
     }
 
+    async function clearUser() {
+        token = null;
+        loginname = null;
+        repo = null;
+        document.getElementById("log").value = "";
+        await clearForm();
+    }
+
     async function logout() {
-        clearUser();
+        await clearUser();
         refreshUser();
     }
 
@@ -146,6 +151,65 @@
         document.getElementById("log").value = newvalue;
     }
 
+    function logoImg(size, logoUrl, dimmed) {
+        return `<img height="${size}" width="${size}" ${dimmed ? 'style="opacity: 0.6"' : ''} src="${logoUrl}"/>`;
+    }
+
+    const logoUrlBtc = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/bitcoin/info/logo.png";
+    const logoUrlTwt = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/assets/TWT-8C2/logo.png";
+    const logoUrlBnb = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/info/logo.png";
+    const logoUrlEth = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
+
+    function logoHtml(logoUrl, smallOnly) {
+        var h = '';
+        h += `<table><tr>`;
+        h += `<td><table>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlBtc, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlTwt, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoUrl, false)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlBnb, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlEth, true)}</td></tr>`;
+        h += `</table></td>`;
+        if (!smallOnly) {
+            h += `<td><table>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, logoUrlBtc, true)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, logoUrl, false)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, logoUrlBnb, true)}</td></tr>`;
+            h += `</table></td>`;
+            h += `<td><table>`;
+            h += `<tr><td style="padding: 5">${logoImg(128, logoUrl, false)}</td></tr>`;
+            h += `</table></td>`;
+            h += `</tr></table>`;
+        }
+        return h;
+    }
+
+    async function loadLogo(url) {
+        testLogoUrl = url;
+        document.getElementById("logo-preview-light").innerHTML = logoHtml(url, true);
+        document.getElementById("logo-preview-dark").innerHTML = logoHtml(url, false);
+    }
+
+    var testLogoUrl = null;
+    const testLogoUrls = [
+        "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x47F32f9eBFc49a1434eB6190d5D8a80A2Dc36af5/logo.png",
+        "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x9B9087756eCa997C5D595C840263001c9a26646D/logo.png",
+        "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xd4c435F5B09F855C3317c8524Cb1F586E42795fa/logo.png",
+        "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x86876a5fCAcb52a197f194A2c8b2166Af327a6da/logo.png",
+        "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xD5525D397898e5502075Ea5E830d8914f6F0affe/logo.png"
+    ];
+    var testLogoIndex = 0;
+
+    async function debugLoadTestLogo() {
+        testLogoIndex = (testLogoIndex + 1) % testLogoUrls.length;
+        await loadLogo(testLogoUrls[testLogoIndex]);
+    }
+
+    async function uploadLogo() {
+        await debugLoadTestLogo();
+        alert("TODO");
+    }
+
     async function checkPRs() {
         if (!loginname || !repo) {
             return;
@@ -207,28 +271,49 @@
         return "br" + date;
     }
 
-    async function createBlob(content) {
+    async function createBlob(content, encoding) {
         const result = await request("POST /repos/:owner/:repo/git/blobs", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
             content: content,
-            encoding: "utf-8"
+            encoding: encoding
         });
         return result.data.sha;
     }
 
-    async function createFiles(basePath, subFolder, infoJsonContent) {
+    async function logoStream() {
+        if (!testLogoUrl) {
+            return null;
+        }
+        const response = await fetch(testLogoUrl);
+        if (!response || !response.status == 200) {
+            addLog(`Logo stream error ${url}`);
+            return null;
+        }
+        return await response.arrayBuffer();
+    }
+
+    function arrayBufferToBase64(buffer) {
+        var binary = '';
+        var bytes = new Uint8Array(buffer);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    }
+
+    async function createFiles(basePath, subFolder, logoContents, infoJsonContent) {
         var fileInfos = [];
 
         const folder = basePath + "/" + subFolder;
 
-        const content1 = "[PNG]";
-        const sha1 = await createBlob(content1);
-        if (!sha1) {
+        const logoSha = await createBlob(arrayBufferToBase64(logoContents), "base64");
+        if (!logoSha) {
             return null;
         }
-        fileInfos.push({ path: folder + "/logo.png", sha: sha1, mode: "100644", type: "blob" });
+        fileInfos.push({ path: folder + "/logo.png", sha: logoSha, mode: "100644", type: "blob" });
 
         fileInfos.push({ path: folder + "/info.json", content: infoJsonContent, mode: "100644", type: "blob" });
 
@@ -278,13 +363,15 @@
         }, null, 2);
     }
 
+    const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
+
     async function fillWithDummyData() {
-        const contract = "0xF784682C82526e245F50975190EF0fff4E4fC077"
         document.getElementById("name").value = "LegumeToken";
-        document.getElementById("contract").value = contract;
+        document.getElementById("contract").value = sampleEthContract;
         document.getElementById("website").value = "https://legume.fi";
         document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
-        document.getElementById("explorer").value = `https://etherscan.io/token/${contract}`;
+        document.getElementById("explorer").value = `https://etherscan.io/token/${sampleEthContract}`;
+        await debugLoadTestLogo();
     }
 
     async function createBranchAndPull() {
@@ -298,7 +385,6 @@
             alert("Fill in all the fields!");
             return;
         }
-        const infoJson = buildInfoJson();
         const branchName = newBranchName();
 
         addLog(`contract: ${contract}  branch ${branchName}`);
@@ -310,7 +396,14 @@
         }
         addLog(`Created branch ${loginname}/${repo}/${branchName}`);
 
-        const fileInfos = await createFiles("blockchains/ethereum/assets", contract, infoJson);
+        const logoContents = await logoStream();
+        if (!logoContents) {
+            addLog(`Could not retrieve logo contents`);
+            return;
+        }
+
+        const infoJson = buildInfoJson();
+        const fileInfos = await createFiles("blockchains/ethereum/assets", contract, logoContents, infoJson);
         if (!fileInfos || fileInfos.length == 0) {
             addLog(`Could not create files`);
             return;
@@ -342,12 +435,14 @@
             return;
         }
 
-        const pullNumber = await createPull(branchName, name, false);
+        const pullNumber = await createPull(branchName, name, false);  // true for debug
         if (!pullNumber) {
             addLog(`Could not create PR`);
             return;
         }
-        addLog(`Created PR ${pullNumber}`);
+        const pullUrl = `https://github.com/${loginname}/${repo}/pull/${pullNumber}`;
+        addLog(`Created PR ${pullNumber}   ${pullUrl}`);
+        alert(`Created PR ${pullNumber}   ${pullUrl}`);
     }
 
     function getTokenQP() {
@@ -356,7 +451,7 @@
     }
 
     async function start() {
-        clearUser();
+        await clearUser();
         refreshUser();
         token = getTokenQP();
         if (!await checkUser()) {
@@ -397,6 +492,28 @@
                             size="60" /></td>
                 </tr>
                 <tr>
+                    <td>
+                        <div>Logo</div>
+                        <div><button class="button" type="button" onclick="uploadLogo()">Upload</button></div>
+                    </td>
+                    <td>
+                        <div id="logo-preview">
+                            <span id="logo-preview-light"
+                                style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
+                                <p align="center"></p>
+                                <p align="center"></p>
+                                <p align="center"></p>
+                            </span>
+                            <span id="logo-preview-dark"
+                                style="background-color: #202020; display: inline-block; padding: 20px; align: center">
+                                <p align="center"></p>
+                                <p align="center"></p>
+                                <p align="center"></p>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
                     <td>Website:</td>
                     <td><input class="input" id="website" placeholder="https://legume.fi" size="60" /></td>
                 </tr>
@@ -416,6 +533,7 @@
                     <td></td>
                     <td>
                         <button class="button" type="button" onclick="createBranchAndPull()">Create PR</button>
+                        <button class="button" type="button" onclick="clearForm()">Clear</button>
                     </td>
                 </tr>
             </table>
@@ -424,7 +542,7 @@
     <div>
         <hr>
         <div>
-            <a href="#" onclick="fillWithDummyData()">Fill test data</a>
+            <a href="#" onclick="logoStream(); fillWithDummyData()">Fill test data</a>
         </div>
         <div>
             <textarea id="log" class="textarea-log" cols="80" rows="8" readonly="true" placeholder="log"></textarea>
