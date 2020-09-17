@@ -13,7 +13,7 @@ const fetch = require('node-fetch');
 //const { octokit } = require("@octokit/rest");
 //const { createOAuthAppAuth } = require("@octokit/auth");
 const { createOAuthAppAuth } = require("@octokit/auth-oauth-app");
-const appName = 'tw-assets-app';
+const appName = "tw-assets-management";
 
 var access_token = null;
 
