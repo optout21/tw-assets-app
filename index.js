@@ -160,7 +160,7 @@ async function start() {
 
 //start();
 
-var serve = serveStatic("./static");
+var serve = serveStatic("./static-files");
 
 var httpServer = http.createServer(async function (req, res) {
     console.log(`req.url ${req.url}`)
