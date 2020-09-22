@@ -1,5 +1,6 @@
 /// Class holding info of a token
 export class TokenInfo {
+    type: string = "";
     contract: string = "";
     logoUrl: string = "";
     logoStream: string = "";
@@ -10,6 +11,7 @@ export class TokenInfo {
 /// Class for entering input for a token
 export class TokenInput {
     name: string = "";
+    type: string = "";
     contract: string = "";
     logoUrl: string = "";
     website: string = "";
@@ -18,6 +20,7 @@ export class TokenInput {
 
     toTokenInfo(tokenInput: TokenInput) {
         let tokenInfo = new TokenInfo();
+        tokenInfo.type = tokenInput.type;
         tokenInfo.contract = tokenInput.contract;
         tokenInfo.logoUrl = tokenInput.logoUrl;
         tokenInfo.logoStream = "";

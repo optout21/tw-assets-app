@@ -200,6 +200,7 @@
     let tokenInfo = null;
 
     async function loadTokenInfo() {
+        document.getElementById("info.type").innerText = tokenInfo.type;
         document.getElementById("info.contract").innerText = tokenInfo.contract;
         await loadLogo(tokenInfo.logoUrl);
         document.getElementById("info.info").value = tokenInfo.infoString;
@@ -396,6 +397,7 @@
         if (!tokenInput) {
             tokenInput = new assetsLib.TokenInput();
         }
+        tokenInput.type = "erc20";
         tokenInput.name = document.getElementById("name").value;
         tokenInput.contract = document.getElementById("contract").value;
         tokenInput.website = document.getElementById("website").value;
@@ -582,10 +584,19 @@
                     <div>
                         <table>
                             <tr>
+                                <td>Type:</td>
                                 <td>
-                                    Contract:
-                                    <strong><span id="info.contract"></span></strong </td> </tr> <tr>
+                                    <strong><span id="info.type"></span></strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Contract:</td>
                                 <td>
+                                    <strong><span id="info.contract"></span></strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
                                     <div id="logo-preview">
                                         <span id="logo-preview-light"
                                             style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
@@ -603,7 +614,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>
+                                <td colspan="2">
                                     <textarea class="input" id="info.info" readonly="true" cols="50"
                                         rows="8"></textarea>
                                 </td>
