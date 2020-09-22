@@ -244,11 +244,11 @@
         return result.data.ref;
     }
 
-    async function createPull(branchName, tokenName, debugLocalRepoOnly) {
+    async function createPull(branchName, tokenName, debugPrTargetFork) {
         const title = `Add ${tokenName}`;
         var owner1 = mainRepoOwner;
         var repo1 = mainRepoName;
-        if (debugLocalRepoOnly) {
+        if (debugPrTargetFork) {
             owner1 = loginname;
             repo1 = repo;
         }
@@ -441,7 +441,8 @@
             return;
         }
 
-        const pullNumber = await createPull(branchName, tokenInput.name, false);  // true for debug
+        const debugPrTargetFork = !document.getElementsByName("debug-pr-target")[0].checked;
+        const pullNumber = await createPull(branchName, tokenInput.name, debugPrTargetFork);  // true for debug
         if (!pullNumber) {
             addLog(`Could not create PR`);
             return;
@@ -547,10 +548,18 @@
     </div>
     <div>
         <hr>
+        <div><h3>Debug Section</h3></div>
+        <span>
+            <button class="button" type="button" onclick="logoStream(); fillWithDummyData()">Fill test data</button>
+        </span>
+        <span>
+            Create PR in:
+            <input type="radio" name="debug-pr-target" id="main" value="main"><label for="main">main</label>
+            <input type="radio" name="debug-pr-target" id="fork" value="fork"><label for="fork">forked</label>
+            assets repo
+        </span>
         <div>
-            <a href="#" onclick="logoStream(); fillWithDummyData()">Fill test data</a>
-        </div>
-        <div>
+            <p>Log</p>
             <textarea id="log" class="textarea-log" cols="80" rows="8" readonly="true" placeholder="log"></textarea>
         </div>
     </div>
