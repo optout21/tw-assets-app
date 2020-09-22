@@ -1,34 +1,26 @@
 /// Class holding info of a token
 export class TokenInfo {
-    contract: string;
-    logoUrl: string;
-    logoStream: string;
-    info: unknown;
-    infoString: string;
-
-    TokenInfo() {
-        this.contract = "";
-        this.logoUrl = "";
-        this.logoStream = null;
-        this.info = null;
-        this.infoString = "{}";
-    }
+    contract: string = "";
+    logoUrl: string = "";
+    logoStream: string = "";
+    info: unknown = {};
+    infoString: string = "{}";
 };
 
 /// Class for entering input for a token
 export class TokenInput {
-    name: string;
-    contract: string;
-    logoUrl: string;
-    website: string;
-    explorerUrl: string;
-    description: string;
+    name: string = "";
+    contract: string = "";
+    logoUrl: string = "";
+    website: string = "";
+    explorerUrl: string = "";
+    description: string = "";
 
     toTokenInfo(tokenInput: TokenInput) {
         let tokenInfo = new TokenInfo();
         tokenInfo.contract = tokenInput.contract;
         tokenInfo.logoUrl = tokenInput.logoUrl;
-        tokenInfo.logoStream = null;
+        tokenInfo.logoStream = "";
         tokenInfo.info = {
             name: tokenInput.name,
             website: tokenInput.website,
