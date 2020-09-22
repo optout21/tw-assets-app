@@ -515,7 +515,22 @@
         await loadTokenInfo();
     }
 
+    async function tabSelect(tab) {
+        document.getElementById("tab-search").hidden = true;
+        document.getElementById("tab-add").hidden = true;
+        switch (tab) {
+            case "search":
+                document.getElementById("tab-search").hidden = false;
+                break;
+            case "add":
+            default:
+                document.getElementById("tab-add").hidden = false;
+                break;
+        }
+    }
+
     async function start() {
+        tabSelect("add");
         await clearUser();
         refreshUser();
         token = getTokenQP();
@@ -543,70 +558,85 @@
         <hr />
     </div>
     <div>
+        <a href="#" onclick="tabSelect('search')">Token Search</a> |
+        <a href="#" onclick="tabSelect('add')">Add New Token</a>
+        <hr />
+    </div>
+    <div>
         <table>
             <tr>
                 <td>
-                    <div>
-                        <h3>Add ERC20 Token</h3>
-                        Please fill in the token/project details
+                    <div id="tab-search" hidden="true">
+                        <div>
+                            <h3>Token Search</h3>
+                        </div>
                     </div>
-                    <div>
-                        <table>
-                            <tr>
-                                <td>Name:</td>
-                                <td>
-                                    <input class="input" id="name" placeholder="LegumeToken" size="20"
-                                        onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Contract:</td>
-                                <td>
-                                    <input class="input" id="contract"
-                                        placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
-                                        onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div>Logo</div>
-                                </td>
-                                <td>
-                                    <div><button class="button" type="button" onclick="uploadLogo()">Upload</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Website:</td>
-                                <td>
-                                    <input class="input" id="website" placeholder="https://legume.fi" size="40"
-                                        onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Explorer:</td>
-                                <td>
-                                    <input class="input" id="explorer"
-                                        placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
-                                        size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Short description:</td>
-                                <td><textarea class="input" id="short_description"
-                                        placeholder="This is the best-tasting DeFi finance project." cols="50" rows="2"
-                                        onchange="tokenInputChanged()" oninput="tokenInputChanged()"></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td>
-                                    <button class="button" type="button" onclick="createBranchAndPull()">Create
-                                        PR</button>
-                                    <button class="button" type="button" onclick="clearInput()">Clear</button>
-                                </td>
-                            </tr>
-                        </table>
+                </td>
+                <td>
+                    <div id="tab-add">
+                        <div>
+                            <h3>Add ERC20 Token</h3>
+                            Please fill in the token/project details
+                        </div>
+                        <div>
+                            <table>
+                                <tr>
+                                    <td>Name:</td>
+                                    <td>
+                                        <input class="input" id="name" placeholder="LegumeToken" size="20"
+                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Contract:</td>
+                                    <td>
+                                        <input class="input" id="contract"
+                                            placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
+                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div>Logo</div>
+                                    </td>
+                                    <td>
+                                        <div><button class="button" type="button" onclick="uploadLogo()">Upload</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Website:</td>
+                                    <td>
+                                        <input class="input" id="website" placeholder="https://legume.fi" size="40"
+                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Explorer:</td>
+                                    <td>
+                                        <input class="input" id="explorer"
+                                            placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                                            size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Short description:</td>
+                                    <td><textarea class="input" id="short_description"
+                                            placeholder="This is the best-tasting DeFi finance project." cols="50"
+                                            rows="2" onchange="tokenInputChanged()"
+                                            oninput="tokenInputChanged()"></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <button class="button" type="button" onclick="createBranchAndPull()">Create
+                                            PR</button>
+                                        <button class="button" type="button" onclick="clearInput()">Clear</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </td>
                 <td>
