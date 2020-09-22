@@ -14,7 +14,7 @@ div {
 button {
   color: white;
   background-color: darkblue;
-  font-size: 120%;
+  font-size: 110%;
   border: none;
   padding: 8px 16px;
   text-align: center;
@@ -22,7 +22,7 @@ button {
   cursor: pointer;
 }
 .input {
-  font-size: 110%;
+  font-size: 105%;
   border: 1;
   padding: 3px 3px;
 }

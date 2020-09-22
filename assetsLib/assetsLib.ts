@@ -27,7 +27,7 @@ export class TokenInput {
             short_description: tokenInput.description,
             explorer: tokenInput.explorerUrl,
         };
-        tokenInfo.infoString = JSON.stringify(tokenInfo.info, null, 2);
+        tokenInfo.infoString = JSON.stringify(tokenInfo.info, null, 4);
         return tokenInfo;
     }
 }
