@@ -4,8 +4,20 @@ export class TokenInfo {
     contract: string = "";
     logoUrl: string = "";
     logoStream: string = "";
+    infoUrl: string = "";
     info: unknown = {};
     infoString: string = "{}";
+
+    explorerUrl() {
+        switch (this.type) {
+            case "erc20":
+                if (this.contract) {
+                    return `https://etherscan.io/token/${this.contract}`;
+                }
+                break;
+        }
+        return "";
+    }
 };
 
 /// Class for entering input for a token
@@ -18,17 +30,18 @@ export class TokenInput {
     explorerUrl: string = "";
     description: string = "";
 
-    toTokenInfo(tokenInput: TokenInput) {
+    toTokenInfo() {
         let tokenInfo = new TokenInfo();
-        tokenInfo.type = tokenInput.type;
-        tokenInfo.contract = tokenInput.contract;
-        tokenInfo.logoUrl = tokenInput.logoUrl;
+        tokenInfo.type = this.type;
+        tokenInfo.contract = this.contract;
+        tokenInfo.logoUrl = this.logoUrl;
         tokenInfo.logoStream = "";
+        tokenInfo.infoUrl = "";
         tokenInfo.info = {
-            name: tokenInput.name,
-            website: tokenInput.website,
-            short_description: tokenInput.description,
-            explorer: tokenInput.explorerUrl,
+            name: this.name,
+            website: this.website,
+            short_description: this.description,
+            explorer: this.explorerUrl,
         };
         tokenInfo.infoString = JSON.stringify(tokenInfo.info, null, 4);
         return tokenInfo;

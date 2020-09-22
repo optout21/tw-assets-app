@@ -204,10 +204,28 @@
         document.getElementById("info.contract").innerText = tokenInfo.contract;
         await loadLogo(tokenInfo.logoUrl);
         document.getElementById("info.info").value = tokenInfo.infoString;
+        let links = "";
+        if (tokenInfo.logoUrl) {
+            links += `<a href="${tokenInfo.logoUrl}" target="_blank">Logo</a> `;
+        } else {
+            links += "(logo) ";
+        }
+        if (tokenInfo.infoUrl) {
+            links += `<a href="${tokenInfo.infoUrl}" target="_blank">Info</a> `;
+        } else {
+            links += "(info) ";
+        }
+        const explorer = tokenInfo.explorerUrl();
+        if (explorer) {
+            links += `<a href="${explorer}" target="_blank">Explorer</a> `;
+        } else {
+            links += "(explorer) ";
+        }
+        document.getElementById("info.links").innerHTML = links;
     }
 
     async function refreshTokenInfo() {
-        tokenInfo = tokenInput.toTokenInfo(tokenInput);
+        tokenInfo = tokenInput.toTokenInfo();
         await loadTokenInfo();
     }
 
@@ -416,7 +434,6 @@
             return;
         }
 
-        const tokenInfo = tokenInput.toTokenInfo(tokenInput);
         const branchName = newBranchName();
 
         addLog(`name: ${tokenInput.name}  contract: ${tokenInfo.contract}  branch ${branchName}`);
@@ -597,7 +614,8 @@
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    <div id="logo-preview">
+                                    Logo preview
+                                    <div id="logo-preview" style="background-color: #E0E0E0;">
                                         <span id="logo-preview-light"
                                             style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
                                             <p align="center"></p>
@@ -617,6 +635,12 @@
                                 <td colspan="2">
                                     <textarea class="input" id="info.info" readonly="true" cols="50"
                                         rows="8"></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    Links:
+                                    <span id="info.links"></span>
                                 </td>
                             </tr>
                         </table>
