@@ -401,7 +401,7 @@
 
     const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
 
-    async function fillWithDummyData() {
+    async function debugFillWithDummyData() {
         document.getElementById("name").value = "LegumeToken";
         document.getElementById("contract").value = sampleEthContract;
         document.getElementById("website").value = "https://legume.fi";
@@ -497,6 +497,22 @@
     function getTokenQP() {
         var urlParams = new URLSearchParams(window.location.search);
         return urlParams.get("token");
+    }
+
+    async function debugLoadExisting() {
+        let ti = new assetsLib.TokenInfo();
+        ti.type = "erc20";
+        ti.contract = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+        ti.logoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${ti.contract}/logo.png`;
+        ti.infoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${ti.contract}/info.json`;
+        // read info.json
+        let resp = await fetch(ti.infoUrl);
+        if (resp.status == 200) {
+            ti.info = await resp.json();
+            ti.infoString = JSON.stringify(ti.info, null, 4);
+        }
+        tokenInfo = ti;
+        await loadTokenInfo();
     }
 
     async function start() {
@@ -654,15 +670,16 @@
         <div>
             <h3>Debug Section</h3>
         </div>
-        <span>
-            <button class="button" type="button" onclick="logoStream(); fillWithDummyData()">Fill test data</button>
-        </span>
-        <span>
-            Create PR in:
-            <input type="radio" name="debug-pr-target" id="main" value="main"><label for="main">main</label>
-            <input type="radio" name="debug-pr-target" id="fork" value="fork"><label for="fork">forked</label>
-            assets repo
-        </span>
+        <div>
+            <button class="button" type="button" onclick="logoStream(); debugFillWithDummyData()">Fill test data</button>
+            <span>
+                Create PR in:
+                <input type="radio" name="debug-pr-target" id="main" value="main"><label for="main">main</label>
+                <input type="radio" name="debug-pr-target" id="fork" value="fork"><label for="fork">forked</label>
+                assets repo
+            </span>
+            <button class="button" type="button" onclick="debugLoadExisting()">Load existing</button>
+        </div>
         <div>
             <p>Log</p>
             <textarea id="log" class="textarea-log" cols="100" rows="8" readonly="true" placeholder="log"></textarea>
