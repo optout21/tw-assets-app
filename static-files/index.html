@@ -415,7 +415,7 @@
         if (!tokenInput) {
             tokenInput = new assetsLib.TokenInput();
         }
-        tokenInput.type = "erc20";
+        tokenInput.type = "ERC20";
         tokenInput.name = document.getElementById("name").value;
         tokenInput.contract = document.getElementById("contract").value;
         tokenInput.website = document.getElementById("website").value;
@@ -499,22 +499,6 @@
         return urlParams.get("token");
     }
 
-    async function debugLoadExisting() {
-        let ti = new assetsLib.TokenInfo();
-        ti.type = "erc20";
-        ti.contract = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-        ti.logoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${ti.contract}/logo.png`;
-        ti.infoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${ti.contract}/info.json`;
-        // read info.json
-        let resp = await fetch(ti.infoUrl);
-        if (resp.status == 200) {
-            ti.info = await resp.json();
-            ti.infoString = JSON.stringify(ti.info, null, 4);
-        }
-        tokenInfo = ti;
-        await loadTokenInfo();
-    }
-
     async function tabSelect(tab) {
         document.getElementById("tab-search").hidden = true;
         document.getElementById("tab-add").hidden = true;
@@ -527,6 +511,48 @@
                 document.getElementById("tab-add").hidden = false;
                 break;
         }
+    }
+
+    async function searchButton() {
+        const query = document.getElementById("search.input").value;
+        if (query.length < 2) {
+            // too short, do not search
+            return;
+        }
+        document.getElementById("search.result").innerHTML = "";
+        const coinTypes = "60,195,714,2000714"; // eth, tron, binance, bep20
+        const url = `https://api.trustwallet.com/v2/tokens/list?networks=${coinTypes}&query=${query}`;
+        let resp = await fetch(url);
+        if (resp.status != 200) {
+            alert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
+            return null;
+        }
+        const respJson = await resp.json();
+        var h = '';
+        if (respJson && respJson.docs) {
+            respJson.docs.forEach(t => h += `<option value='${JSON.stringify(t)}'>${t.symbol.substring(0, 10)} \t${t.name.substring(0, 20)}    (${t.type})</option>`);
+        }
+        document.getElementById("search.result").innerHTML = h;
+    }
+
+    async function loadSearchResultButton() {
+        const token = document.getElementById("search.result").value;
+        const tokenJson = JSON.parse(token);
+        tokenInfo = await assetsLib.tokenInfoOfExistingToken(tokenJson.type, tokenJson.token_id, true);
+        loadTokenInfo();
+    }
+
+    async function loadExistingToken(tokenType, contract, repo, branch) {
+        clearToken();
+        document.getElementById("token-contract").innerText = contract;
+        var loUrl = logoUrl(chain, contract, repo, branch);
+        document.getElementById("logo-preview-light").innerHTML = logoHtml(loUrl, true);
+        document.getElementById("logo-preview-dark").innerHTML = logoHtml(loUrl, false);
+        document.getElementById("logo-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${loUrl}">Logo file</a>`;
+        var inUrl = infoUrl(chain, contract, repo, branch);
+        document.getElementById("info-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${inUrl}">Info file</a>`;
+        var esUrl = etherscanUrl(contract);
+        document.getElementById("explorer").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${esUrl}">Token explorer</a>`;
     }
 
     async function start() {
@@ -569,6 +595,17 @@
                     <div id="tab-search" hidden="true">
                         <div>
                             <h3>Token Search</h3>
+                        </div>
+                        <div>
+                            <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
+                            <button onclick="searchButton()">Search</button>
+                        </div>
+                        <select class="input" id="search.result" multiple size="10" style="width: 100%"
+                            onchange="loadSearchResultButton()">
+                            <option>(search results)</option>
+                        </select>
+                        <div>
+                            <button onclick="loadSearchResultButton()">Load</button>
                         </div>
                     </div>
                 </td>
@@ -708,7 +745,6 @@
                 <input type="radio" name="debug-pr-target" id="fork" value="fork"><label for="fork">forked</label>
                 assets repo
             </span>
-            <button class="button" type="button" onclick="debugLoadExisting()">Load existing</button>
         </div>
         <div>
             <p>Log</p>

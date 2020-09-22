@@ -8,17 +8,77 @@ export class TokenInfo {
     info: unknown = {};
     infoString: string = "{}";
 
-    explorerUrl() {
-        switch (this.type) {
-            case "erc20":
-                if (this.contract) {
+    explorerUrl(): string {
+        if (this.contract) {
+            switch (this.type.toLowerCase()) {
+                case "erc20":
                     return `https://etherscan.io/token/${this.contract}`;
-                }
-                break;
+                case "trc10":
+                    return `https://tronscan.io/#/token/${this.contract}`;
+                case "trc20":
+                    return `https://tronscan.io/#/token20/${this.contract}`;
+                case "bep2":
+                    return `https://explorer.binance.org/asset/${this.contract}`;
+            }
         }
         return "";
     }
-};
+}
+
+function chainFromType(tokenType: string) {
+    switch (tokenType.toLowerCase()) {
+        case "erc20":
+            return "ethereum";
+        case "trc10":
+            return "tron";
+        case "trc20":
+            return "tron";
+        case "bep2":
+            return "binance";
+        case "bep8":
+            return "binance";
+        case "bep20":
+            return "bsc";
+        default:
+            return "unknown"
+    }
+}
+
+function typeFromType(tokenType: string) {
+    switch (tokenType.toLowerCase()) {
+        case "erc20":
+            return "ERC20";
+        case "trc10":
+            return "TRC10";
+        case "trc20":
+            return "TRC20";
+        case "bep2":
+            return "BEP2";
+        case "bep8":
+            return "BEP8";
+        case "bep20":
+            return "BEP20";
+        default:
+            return "unknown"
+    }
+}
+
+export async function tokenInfoOfExistingToken(tokenType: string, contract: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
+    let ti = new TokenInfo();
+    ti.type = typeFromType(tokenType);
+    ti.contract = contract;
+    const chain = chainFromType(tokenType);
+    ti.logoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${ti.contract}/logo.png`;
+    ti.infoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${ti.contract}/info.json`;
+    if (fetchInfoJson) {
+        // read info.json
+        let resp = await fetch(ti.infoUrl);
+        if (resp.status == 200) {
+            ti.infoString = await resp.text();
+        }
+    }
+    return ti;
+}
 
 /// Class for entering input for a token
 export class TokenInput {
