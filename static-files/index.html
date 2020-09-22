@@ -356,15 +356,6 @@
         return result.data.object.sha;
     }
 
-    function buildInfoJson() {
-        return JSON.stringify({
-            name: document.getElementById("name").value,
-            website: document.getElementById("website").value,
-            short_description: document.getElementById("short_description").value,
-            explorer: document.getElementById("explorer").value
-        }, null, 2);
-    }
-
     const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
 
     async function fillWithDummyData() {
@@ -376,20 +367,34 @@
         await debugLoadTestLogo();
     }
 
+    function tokenInputFromUI() {
+        let tokenInput = new assetsLib.TokenInput();
+        tokenInput.name = document.getElementById("name").value;
+        tokenInput.contract = document.getElementById("contract").value;
+        tokenInput.logoUrl = "";
+        tokenInput.website = document.getElementById("website").value;
+        tokenInput.explorerUrl = document.getElementById("explorer").value;
+        tokenInput.description = document.getElementById("short_description").value;
+        return tokenInput;
+    }
+
     async function createBranchAndPull() {
         if (!loginname) {
             alert("Log in first!");
             return;
         }
-        const contract = document.getElementById("contract").value;
-        const name = document.getElementById("name").value;
-        if (!contract || !name) {
+
+        const tokenInput = tokenInputFromUI();
+
+        if (!tokenInput.contract || !tokenInput.name) {
             alert("Fill in all the fields!");
             return;
         }
+
+        const tokenInfo = tokenInput.toTokenInfo(tokenInput);
         const branchName = newBranchName();
 
-        addLog(`contract: ${contract}  branch ${branchName}`);
+        addLog(`name: ${tokenInput.name}  contract: ${tokenInfo.contract}  branch ${branchName}`);
 
         const branchRef = await createBranch(branchName);
         if (!branchRef) {
@@ -404,8 +409,7 @@
             return;
         }
 
-        const infoJson = buildInfoJson();
-        const fileInfos = await createFiles("blockchains/ethereum/assets", contract, logoContents, infoJson);
+        const fileInfos = await createFiles("blockchains/ethereum/assets", contract, logoContents, tokenInfo.infoString);
         if (!fileInfos || fileInfos.length == 0) {
             addLog(`Could not create files`);
             return;
@@ -437,7 +441,7 @@
             return;
         }
 
-        const pullNumber = await createPull(branchName, name, false);  // true for debug
+        const pullNumber = await createPull(branchName, tokenInput.name, false);  // true for debug
         if (!pullNumber) {
             addLog(`Could not create PR`);
             return;
