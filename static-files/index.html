@@ -73,7 +73,7 @@
         document.getElementById("contract").value = "";
         document.getElementById("name").value = "";
         document.getElementById("input.type").value = "ERC20";
-        inputLogoSetStream(null, null);
+        inputLogoSetStream(null, null, 0, null);
         document.getElementById("website").value = "";
         document.getElementById("short_description").value = "";
         document.getElementById("explorer").value = "";
@@ -245,26 +245,41 @@
     ];
     var testLogoIndex = 0;
 
-    function inputLogoSetStream(stream, hint) {
+    function inputLogoSetStream(stream, hintName, hintSize, hintMime) {
         if (!tokenInput) {
             tokenInput = new assetsLib.TokenInput();
         }
-        tokenInput.logoStream = stream;
         let text = "(no image)";
         if (stream) {
-            text = `${stream.length} bytes`;
-            if (hint) {
-                text += ` (${hint})`;
+            tokenInput.logoStream = stream;
+            text = "(";
+            
+            tokenInput.logoStreamSize = 0;
+            if (hintSize && hintSize > 0) {
+                tokenInput.logoStreamSize = hintSize;
+                text += `${hintSize} bytes`;
+            } else {
+                text += `${tokenInput.logoStream.length} base64 bytes`;
             }
+            if (hintName) {
+                text += `, ${hintName}`;
+            }
+            tokenInput.logoStreamType = "";
+            if (hintMime) {
+                tokenInput.logoStreamType = hintMime;
+                text += `, ${hintMime}`;
+            }
+            
+            text += ")";
         }
         document.getElementById("input.logo-input").innerHTML = text;
     }
 
     async function debugTestLogoGetNext() {
         testLogoIndex = (testLogoIndex + 1) % testLogoUrls.length;
-        const streamArray = await logoStreamFromUrl(testLogoUrls[testLogoIndex]);
+        const [streamArray, mime] = await logoStreamFromUrl(testLogoUrls[testLogoIndex]);
         const stream = arrayBufferToBase64(streamArray);
-        inputLogoSetStream(stream, "test" + testLogoIndex);
+        inputLogoSetStream(stream, "test" + testLogoIndex, streamArray.byteLength, mime);
     }
 
     async function checkPRs() {
@@ -339,16 +354,17 @@
         return result.data.sha;
     }
 
+    // return [ArrayBuffer, content-type]
     async function logoStreamFromUrl(testLogoUrl) {
         if (!testLogoUrl) {
-            return null;
+            return [null, null];
         }
         const response = await fetch(testLogoUrl);
         if (!response || !response.status == 200) {
             addLog(`Logo stream error ${url}`);
-            return null;
+            return [null, null];
         }
-        return await response.arrayBuffer();
+        return [await response.arrayBuffer(), response.headers.get('Content-Type')];
     }
 
     function arrayBufferToBase64(buffer) {
@@ -471,7 +487,7 @@
         const chain = assetsLib.chainFromType(tokenInfo.type);
         if (!chain || chain == "unknown") {
             addLog(`Could not retrieve chain from token type ${tokenInfo.type}`);
-            return;    
+            return;
         }
         const fileInfos = await createFiles(`blockchains/${chain}/assets`, tokenInfo.contract, stream, tokenInfo.infoString);
         if (!fileInfos || fileInfos.length == 0) {
@@ -585,7 +601,7 @@
             reader.onload = async function (evt) {
                 var contents = evt.target.result;
                 var base64 = arrayBufferToBase64(contents);
-                inputLogoSetStream(base64, file.name);
+                inputLogoSetStream(base64, file.name, file.size, file.type);
                 await refreshTokenInfo();
             }
             reader.onerror = function (evt) {
