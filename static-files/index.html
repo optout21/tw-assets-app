@@ -72,6 +72,7 @@
     async function clearInput() {
         document.getElementById("contract").value = "";
         document.getElementById("name").value = "";
+        document.getElementById("input.type").value = "ERC20";
         inputLogoSetStream(null, null);
         document.getElementById("website").value = "";
         document.getElementById("short_description").value = "";
@@ -414,6 +415,7 @@
 
     async function debugFillWithDummyData() {
         document.getElementById("name").value = "LegumeToken";
+        document.getElementById("input.type").value = "ERC20";
         document.getElementById("contract").value = sampleEthContract;
         document.getElementById("website").value = "https://legume.fi";
         document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
@@ -426,8 +428,8 @@
         if (!tokenInput) {
             tokenInput = new assetsLib.TokenInput();
         }
-        tokenInput.type = "ERC20";
         tokenInput.name = document.getElementById("name").value;
+        tokenInput.type = document.getElementById("input.type").value;
         tokenInput.contract = document.getElementById("contract").value;
         tokenInput.website = document.getElementById("website").value;
         tokenInput.explorerUrl = document.getElementById("explorer").value;
@@ -440,14 +442,14 @@
             return;
         }
 
-        if (!tokenInput.contract || !tokenInput.name) {
+        if (!tokenInput.contract || !tokenInput.name || !tokenInput.type) {
             alert("Fill in all the fields!");
             return;
         }
 
         const branchName = newBranchName();
 
-        addLog(`name: ${tokenInput.name}  contract: ${tokenInfo.contract}  branch ${branchName}`);
+        addLog(`name: ${tokenInput.name}  type: ${tokenInput.type}  contract: ${tokenInfo.contract}  branch ${branchName}`);
 
         const branchRef = await createBranch(branchName);
         if (!branchRef) {
@@ -466,7 +468,12 @@
             return;
         }
 
-        const fileInfos = await createFiles("blockchains/ethereum/assets", tokenInfo.contract, stream, tokenInfo.infoString);
+        const chain = assetsLib.chainFromType(tokenInfo.type);
+        if (!chain || chain == "unknown") {
+            addLog(`Could not retrieve chain from token type ${tokenInfo.type}`);
+            return;    
+        }
+        const fileInfos = await createFiles(`blockchains/${chain}/assets`, tokenInfo.contract, stream, tokenInfo.infoString);
         if (!fileInfos || fileInfos.length == 0) {
             addLog(`Could not create files`);
             return;
@@ -580,7 +587,7 @@
                 var base64 = arrayBufferToBase64(contents);
                 inputLogoSetStream(base64, file.name);
                 await refreshTokenInfo();
-            }  
+            }
             reader.onerror = function (evt) {
                 alert(`Error reading file ${file.name}`);
             }
@@ -657,7 +664,19 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Contract:</td>
+                                    <td>Type:</td>
+                                    <td>
+                                        <select id="input.type" name="type" class="input">
+                                            <option value="ERC20">ERC20 (Ethereum)</option>
+                                            <option value="BEP2">BEP2 (Binance)</option>
+                                            <option value="BEP20">BEP20 (Binance Smart Chain)</option>
+                                            <option value="TRC10">TRC10 (Tron)</option>
+                                            <option value="TRC20">TRC20 (Tron)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Contract/ID:</td>
                                     <td>
                                         <input class="input" id="contract"
                                             placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
@@ -670,8 +689,10 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <button class="button" onclick="document.getElementById('input.file-selector').click();">Upload</button>
-                                            <input id="input.file-selector" type="file" style="display: none;" onchange="logoFileSelected();"/>
+                                            <button class="button"
+                                                onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                            <input id="input.file-selector" type="file" style="display: none;"
+                                                onchange="logoFileSelected();" />
                                             <span id="input.logo-input"></span>
                                         </div>
                                     </td>
@@ -694,8 +715,8 @@
                                 <tr>
                                     <td>Short description:</td>
                                     <td><textarea class="input" id="short_description"
-                                            placeholder="This is the best-tasting DeFi finance project." style="width: 100%;"
-                                            rows="2" onchange="tokenInputChanged()"
+                                            placeholder="This is the best-tasting DeFi finance project."
+                                            style="width: 100%;" rows="2" onchange="tokenInputChanged()"
                                             oninput="tokenInputChanged()"></textarea>
                                     </td>
                                 </tr>

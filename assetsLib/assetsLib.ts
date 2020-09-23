@@ -26,7 +26,7 @@ export class TokenInfo {
     }
 }
 
-function chainFromType(tokenType: string) {
+export function chainFromType(tokenType: string) {
     switch (tokenType.toLowerCase()) {
         case "erc20":
             return "ethereum";
