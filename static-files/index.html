@@ -72,7 +72,7 @@
     async function clearInput() {
         document.getElementById("contract").value = "";
         document.getElementById("name").value = "";
-        inputLogoSetArray(null, null);
+        inputLogoSetStream(null, null);
         document.getElementById("website").value = "";
         document.getElementById("short_description").value = "";
         document.getElementById("explorer").value = "";
@@ -154,8 +154,13 @@
         document.getElementById("log").value = newvalue;
     }
 
-    function logoImg(size, logoUrl, dimmed) {
-        return `<img height="${size}" width="${size}" ${dimmed ? 'style="opacity: 0.6"' : ''} src="${logoUrl}"/>`;
+    function logoImg(size, logoStream, logoUrl, dimmed) {
+        let src = logoUrl;
+        if (logoStream) {
+            // image data inline
+            src = "data:image/gif;base64," + logoStream;
+        }
+        return `<img height="${size}" width="${size}" ${dimmed ? 'style="opacity: 0.6"' : ''} src="${src}"/>`;
     }
 
     const logoUrlBtc = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/bitcoin/info/logo.png";
@@ -163,34 +168,33 @@
     const logoUrlBnb = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/info/logo.png";
     const logoUrlEth = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
 
-    function logoHtml(logoUrl, smallOnly) {
+    function logoPreviewHtml(logoStream, logoUrl, smallOnly) {
         var h = '';
         h += `<table><tr>`;
         h += `<td><table>`;
-        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlBtc, true)}</td></tr>`;
-        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlTwt, true)}</td></tr>`;
-        h += `<tr><td style="padding: 5">${logoImg(32, logoUrl, false)}</td></tr>`;
-        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlBnb, true)}</td></tr>`;
-        h += `<tr><td style="padding: 5">${logoImg(32, logoUrlEth, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, null, logoUrlBtc, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, null, logoUrlTwt, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, logoStream, logoUrl, false)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, null, logoUrlBnb, true)}</td></tr>`;
+        h += `<tr><td style="padding: 5">${logoImg(32, null, logoUrlEth, true)}</td></tr>`;
         h += `</table></td>`;
         if (!smallOnly) {
             h += `<td><table>`;
-            h += `<tr><td style="padding: 5">${logoImg(64, logoUrlBtc, true)}</td></tr>`;
-            h += `<tr><td style="padding: 5">${logoImg(64, logoUrl, false)}</td></tr>`;
-            h += `<tr><td style="padding: 5">${logoImg(64, logoUrlBnb, true)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, null, logoUrlBtc, true)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, logoStream, logoUrl, false)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(64, null, logoUrlBnb, true)}</td></tr>`;
             h += `</table></td>`;
             h += `<td><table>`;
-            h += `<tr><td style="padding: 5">${logoImg(128, logoUrl, false)}</td></tr>`;
+            h += `<tr><td style="padding: 5">${logoImg(128, logoStream, logoUrl, false)}</td></tr>`;
             h += `</table></td>`;
             h += `</tr></table>`;
         }
         return h;
     }
 
-    async function loadLogo(url) {
-        testLogoUrl = url;
-        document.getElementById("logo-preview-light").innerHTML = logoHtml(url, true);
-        document.getElementById("logo-preview-dark").innerHTML = logoHtml(url, false);
+    async function loadLogo(stream, url) {
+        document.getElementById("logo-preview-light").innerHTML = logoPreviewHtml(stream, url, true);
+        document.getElementById("logo-preview-dark").innerHTML = logoPreviewHtml(stream, url, false);
     }
 
     let tokenInput = null;
@@ -199,7 +203,7 @@
     async function loadTokenInfo() {
         document.getElementById("info.type").innerText = tokenInfo.type;
         document.getElementById("info.contract").innerText = tokenInfo.contract;
-        await loadLogo(tokenInfo.logoUrl);
+        await loadLogo(tokenInfo.logoStream, tokenInfo.logoUrl);
         document.getElementById("info.info").value = tokenInfo.infoString;
         let links = "";
         if (tokenInfo.logoUrl) {
@@ -231,7 +235,6 @@
         await refreshTokenInfo();
     }
 
-    var testLogoUrl = null;
     const testLogoUrls = [
         "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x47F32f9eBFc49a1434eB6190d5D8a80A2Dc36af5/logo.png",
         "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x9B9087756eCa997C5D595C840263001c9a26646D/logo.png",
@@ -241,35 +244,26 @@
     ];
     var testLogoIndex = 0;
 
-    function inputLogoSetArray(arrayBuffer, fileInfo) {
-        if (tokenInput) {
-            tokenInput.logoStream = arrayBuffer;
-            tokenInput.logoUrl = "";
+    function inputLogoSetStream(stream, hint) {
+        if (!tokenInput) {
+            tokenInput = new assetsLib.TokenInput();
         }
-        if (!arrayBuffer) {
-            document.getElementById("input.logo-input").value = "";
-        } else {
-            document.getElementById("input.logo-input").value = `Local: '${fileInfo.name}'' (${fileInfo.size}, ${fileInfo.type})`;
+        tokenInput.logoStream = stream;
+        let text = "(no image)";
+        if (stream) {
+            text = `${stream.length} bytes`;
+            if (hint) {
+                text += ` (${hint})`;
+            }
         }
+        document.getElementById("input.logo-input").innerHTML = text;
     }
 
-    function inputLogoSetUrl(url) {
-        if (tokenInput) {
-            tokenInput.logoStream = undefined;
-            tokenInput.logoUrl = url;
-        }
-        document.getElementById("input.logo-input").value = `Remote: ${url}`;
-    }
-
-    function debugTestLogoGetNext() {
+    async function debugTestLogoGetNext() {
         testLogoIndex = (testLogoIndex + 1) % testLogoUrls.length;
-        inputLogoSetUrl(testLogoUrls[testLogoIndex]);
-    }
-
-    async function uploadLogo() {
-        debugTestLogoGetNext();
-        await tokenInputChanged();
-        alert("TODO");
+        const streamArray = await logoStreamFromUrl(testLogoUrls[testLogoIndex]);
+        const stream = arrayBufferToBase64(streamArray);
+        inputLogoSetStream(stream, "test" + testLogoIndex);
     }
 
     async function checkPRs() {
@@ -344,7 +338,7 @@
         return result.data.sha;
     }
 
-    async function logoStreamFromUrl() {
+    async function logoStreamFromUrl(testLogoUrl) {
         if (!testLogoUrl) {
             return null;
         }
@@ -371,7 +365,7 @@
 
         const folder = basePath + "/" + subFolder;
 
-        const logoSha = await createBlob(arrayBufferToBase64(logoContents), "base64");
+        const logoSha = await createBlob(logoContents, "base64");
         if (!logoSha) {
             return null;
         }
@@ -424,7 +418,7 @@
         document.getElementById("website").value = "https://legume.fi";
         document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
         document.getElementById("explorer").value = `https://etherscan.io/token/${sampleEthContract}`;
-        debugTestLogoGetNext();
+        await debugTestLogoGetNext();
         await tokenInputChanged();
     }
 
@@ -462,13 +456,17 @@
         }
         addLog(`Created branch ${loginname}/${repo}/${branchName}`);
 
-        const logoContents = await logoStreamFromUrl();
-        if (!logoContents) {
+        let stream = null;
+        if (tokenInfo.logoStream && tokenInfo.logoStream.length > 10) {
+            // stream is there, use that
+            stream = tokenInfo.logoStream;
+        }
+        if (!stream) {
             addLog(`Could not retrieve logo contents`);
             return;
         }
 
-        const fileInfos = await createFiles("blockchains/ethereum/assets", tokenInfo.contract, logoContents, tokenInfo.infoString);
+        const fileInfos = await createFiles("blockchains/ethereum/assets", tokenInfo.contract, stream, tokenInfo.infoString);
         if (!fileInfos || fileInfos.length == 0) {
             addLog(`Could not create files`);
             return;
@@ -563,8 +561,8 @@
         clearToken();
         document.getElementById("token-contract").innerText = contract;
         var loUrl = logoUrl(chain, contract, repo, branch);
-        document.getElementById("logo-preview-light").innerHTML = logoHtml(loUrl, true);
-        document.getElementById("logo-preview-dark").innerHTML = logoHtml(loUrl, false);
+        document.getElementById("logo-preview-light").innerHTML = logoPreviewHtml(null, loUrl, true);
+        document.getElementById("logo-preview-dark").innerHTML = logoPreviewHtml(null, loUrl, false);
         document.getElementById("logo-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${loUrl}">Logo file</a>`;
         var inUrl = infoUrl(chain, contract, repo, branch);
         document.getElementById("info-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${inUrl}">Info file</a>`;
@@ -577,9 +575,11 @@
         if (file) {
             var reader = new FileReader();
             reader.readAsArrayBuffer(file);
-            reader.onload = function (evt) {
+            reader.onload = async function (evt) {
                 var contents = evt.target.result;
-                inputLogoSetArray(contents, file);
+                var base64 = arrayBufferToBase64(contents);
+                inputLogoSetStream(base64, file.name);
+                await refreshTokenInfo();
             }  
             reader.onerror = function (evt) {
                 alert(`Error reading file ${file.name}`);
@@ -670,13 +670,9 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <button class="button" type="button" onclick="uploadLogo()">Upload</button>
                                             <button class="button" onclick="document.getElementById('input.file-selector').click();">Upload</button>
                                             <input id="input.file-selector" type="file" style="display: none;" onchange="logoFileSelected();"/>
-                                        </div>
-                                        <div>
-                                                <textarea class="textarea-small" id="input.logo-input" style="width: 100%;"
-                                                rows="1" readonly="true"></textarea>
+                                            <span id="input.logo-input"></span>
                                         </div>
                                     </td>
                                 </tr>
@@ -777,7 +773,7 @@
             <h3>Debug Section</h3>
         </div>
         <div>
-            <button class="button" type="button" onclick="logoStreamFromUrl(); debugFillWithDummyData()">Fill test data</button>
+            <button class="button" type="button" onclick="debugFillWithDummyData();">Fill test data</button>
             <span>
                 Create PR in:
                 <input type="radio" name="debug-pr-target" id="main" value="main"><label for="main">main</label>

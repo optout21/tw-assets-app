@@ -3,7 +3,8 @@ export class TokenInfo {
     type: string = "";
     contract: string = "";
     logoUrl: string = "";
-    logoStream?: ArrayBuffer = undefined;
+    // the logo contents, in base64.  If set, it is used, if empty, Url is used.
+    logoStream: string = "";
     infoUrl: string = "";
     info: unknown = {};
     infoString: string = "{}";
@@ -85,7 +86,7 @@ export class TokenInput {
     name: string = "";
     type: string = "";
     contract: string = "";
-    logoUrl: string = "";
+    logoStream: string = "";
     website: string = "";
     explorerUrl: string = "";
     description: string = "";
@@ -94,8 +95,8 @@ export class TokenInput {
         let tokenInfo = new TokenInfo();
         tokenInfo.type = this.type;
         tokenInfo.contract = this.contract;
-        tokenInfo.logoUrl = this.logoUrl;
-        tokenInfo.logoStream = undefined;
+        tokenInfo.logoUrl = "";
+        tokenInfo.logoStream = this.logoStream;
         tokenInfo.infoUrl = "";
         tokenInfo.info = {
             name: this.name,
