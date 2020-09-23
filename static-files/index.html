@@ -72,10 +72,7 @@
     async function clearInput() {
         document.getElementById("contract").value = "";
         document.getElementById("name").value = "";
-        if (tokenInput) {
-            tokenInput.logoUrl = "";
-            tokenInput.logoStream = "";
-        }
+        inputLogoSetArray(null, null);
         document.getElementById("website").value = "";
         document.getElementById("short_description").value = "";
         document.getElementById("explorer").value = "";
@@ -244,9 +241,29 @@
     ];
     var testLogoIndex = 0;
 
+    function inputLogoSetArray(arrayBuffer, fileInfo) {
+        if (tokenInput) {
+            tokenInput.logoStream = arrayBuffer;
+            tokenInput.logoUrl = "";
+        }
+        if (!arrayBuffer) {
+            document.getElementById("input.logo-input").value = "";
+        } else {
+            document.getElementById("input.logo-input").value = `Local: '${fileInfo.name}'' (${fileInfo.size}, ${fileInfo.type})`;
+        }
+    }
+
+    function inputLogoSetUrl(url) {
+        if (tokenInput) {
+            tokenInput.logoStream = undefined;
+            tokenInput.logoUrl = url;
+        }
+        document.getElementById("input.logo-input").value = `Remote: ${url}`;
+    }
+
     function debugTestLogoGetNext() {
         testLogoIndex = (testLogoIndex + 1) % testLogoUrls.length;
-        tokenInput.logoUrl = testLogoUrls[testLogoIndex];
+        inputLogoSetUrl(testLogoUrls[testLogoIndex]);
     }
 
     async function uploadLogo() {
@@ -327,7 +344,7 @@
         return result.data.sha;
     }
 
-    async function logoStream() {
+    async function logoStreamFromUrl() {
         if (!testLogoUrl) {
             return null;
         }
@@ -445,7 +462,7 @@
         }
         addLog(`Created branch ${loginname}/${repo}/${branchName}`);
 
-        const logoContents = await logoStream();
+        const logoContents = await logoStreamFromUrl();
         if (!logoContents) {
             addLog(`Could not retrieve logo contents`);
             return;
@@ -555,6 +572,21 @@
         document.getElementById("explorer").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${esUrl}">Token explorer</a>`;
     }
 
+    async function logoFileSelected() {
+        const file = document.getElementById("input.file-selector").files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = function (evt) {
+                var contents = evt.target.result;
+                inputLogoSetArray(contents, file);
+            }  
+            reader.onerror = function (evt) {
+                alert(`Error reading file ${file.name}`);
+            }
+        }
+    }
+
     async function start() {
         tabSelect("add");
         await clearUser();
@@ -634,10 +666,17 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                        <div>Logo</div>
+                                        <div>Logo:</div>
                                     </td>
                                     <td>
-                                        <div><button class="button" type="button" onclick="uploadLogo()">Upload</button>
+                                        <div>
+                                            <button class="button" type="button" onclick="uploadLogo()">Upload</button>
+                                            <button class="button" onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                            <input id="input.file-selector" type="file" style="display: none;" onchange="logoFileSelected();"/>
+                                        </div>
+                                        <div>
+                                                <textarea class="textarea-small" id="input.logo-input" style="width: 100%;"
+                                                rows="1" readonly="true"></textarea>
                                         </div>
                                     </td>
                                 </tr>
@@ -659,7 +698,7 @@
                                 <tr>
                                     <td>Short description:</td>
                                     <td><textarea class="input" id="short_description"
-                                            placeholder="This is the best-tasting DeFi finance project." cols="50"
+                                            placeholder="This is the best-tasting DeFi finance project." style="width: 100%;"
                                             rows="2" onchange="tokenInputChanged()"
                                             oninput="tokenInputChanged()"></textarea>
                                     </td>
@@ -716,7 +755,7 @@
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    <textarea class="input" id="info.info" readonly="true" cols="50"
+                                    <textarea class="input" id="info.info" readonly="true" style="width: 100%;"
                                         rows="8"></textarea>
                                 </td>
                             </tr>
@@ -738,7 +777,7 @@
             <h3>Debug Section</h3>
         </div>
         <div>
-            <button class="button" type="button" onclick="logoStream(); debugFillWithDummyData()">Fill test data</button>
+            <button class="button" type="button" onclick="logoStreamFromUrl(); debugFillWithDummyData()">Fill test data</button>
             <span>
                 Create PR in:
                 <input type="radio" name="debug-pr-target" id="main" value="main"><label for="main">main</label>
@@ -748,7 +787,7 @@
         </div>
         <div>
             <p>Log</p>
-            <textarea id="log" class="textarea-log" cols="100" rows="8" readonly="true" placeholder="log"></textarea>
+            <textarea id="log" class="textarea-small" cols="100" rows="8" readonly="true" placeholder="log"></textarea>
         </div>
     </div>
 </body>

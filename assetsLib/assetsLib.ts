@@ -3,7 +3,7 @@ export class TokenInfo {
     type: string = "";
     contract: string = "";
     logoUrl: string = "";
-    logoStream: string = "";
+    logoStream?: ArrayBuffer = undefined;
     infoUrl: string = "";
     info: unknown = {};
     infoString: string = "{}";
@@ -95,7 +95,7 @@ export class TokenInput {
         tokenInfo.type = this.type;
         tokenInfo.contract = this.contract;
         tokenInfo.logoUrl = this.logoUrl;
-        tokenInfo.logoStream = "";
+        tokenInfo.logoStream = undefined;
         tokenInfo.infoUrl = "";
         tokenInfo.info = {
             name: this.name,
