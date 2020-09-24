@@ -457,14 +457,23 @@
         tokenInput.description = document.getElementById("short_description").value;
     }
 
+    async function myAlert(message) {
+        addLog(message);
+        alert(message);
+    }
+
+    function createPullError(message) {
+        myAlert("PR creation error: " + message);
+    }
+
     async function createBranchAndPull() {
         if (!loginname) {
-            alert("Log in first!");
+            createPullError("Log in first!");
             return;
         }
 
-        if (!tokenInput.contract || !tokenInput.name || !tokenInput.type) {
-            alert("Fill in all the fields!");
+        if (!tokenInput.contract || !tokenInput.name || !tokenInput.type || !tokenInput.logoStream) {
+            createPullError("Fill in all the fields!");
             return;
         }
 
@@ -474,7 +483,7 @@
 
         const branchRef = await createBranch(branchName);
         if (!branchRef) {
-            addLog(`Could not create branch ${branchName}`);
+            createPullError(`Could not create branch ${branchName}`);
             return;
         }
         addLog(`Created branch ${loginname}/${repo}/${branchName}`);
@@ -485,56 +494,55 @@
             stream = tokenInfo.logoStream;
         }
         if (!stream) {
-            addLog(`Could not retrieve logo contents`);
+            createPullError(`Could not retrieve logo contents`);
             return;
         }
 
         const chain = assetsLib.chainFromType(tokenInfo.type);
         if (!chain || chain == "unknown") {
-            addLog(`Could not retrieve chain from token type ${tokenInfo.type}`);
+            createPullError(`Could not retrieve chain from token type ${tokenInfo.type}`);
             return;
         }
         const fileInfos = await createFiles(`blockchains/${chain}/assets`, tokenInfo.contract, stream, tokenInfo.infoString);
         if (!fileInfos || fileInfos.length == 0) {
-            addLog(`Could not create files`);
+            createPullError(`Could not create files`);
             return;
         }
         addLog(`Created ${fileInfos.length} new files`);
 
         const branchSha = await getBranchRef(branchName);
         if (!branchSha) {
-            addLog(`Could not get ref for branch ${branchName}`);
+            createPullError(`Could not get ref for branch ${branchName}`);
             return;
         }
 
         const tree = await createTree(branchSha, fileInfos);
         if (!tree) {
-            addLog(`Could not create tree with files`);
+            createPullError(`Could not create tree with files`);
             return;
         }
 
         const commit = await createCommit(branchSha, tree, name);
         if (!commit) {
-            addLog(`Could not create commit`);
+            createPullError(`Could not create commit`);
             return;
         }
         addLog(`Created new commit ${commit}`);
 
         const newBranchSha = await updateReference("heads/" + branchName, commit);
         if (!newBranchSha) {
-            addLog(`Could not update branch ${branchName} to commit ${commit}`);
+            createPullError(`Could not update branch ${branchName} to commit ${commit}`);
             return;
         }
 
         const debugPrTargetFork = !document.getElementsByName("debug-pr-target")[0].checked;
         const pullNumber = await createPull(branchName, tokenInput.name, debugPrTargetFork);  // true for debug
         if (!pullNumber) {
-            addLog(`Could not create PR`);
+            createPullError(`Could not create PR`);
             return;
         }
         const pullUrl = `https://github.com/${loginname}/${repo}/pull/${pullNumber}`;
-        addLog(`Created PR ${pullNumber}   ${pullUrl}`);
-        alert(`Created PR ${pullNumber}   ${pullUrl}`);
+        myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
     }
 
     function getTokenQP() {
@@ -567,7 +575,7 @@
         const url = `https://api.trustwallet.com/v2/tokens/list?networks=${coinTypes}&query=${query}`;
         let resp = await fetch(url);
         if (resp.status != 200) {
-            alert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
+            myAlert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
             return null;
         }
         const respJson = await resp.json();
@@ -610,7 +618,7 @@
                 await checkAndRefreshTokenInfo();
             }
             reader.onerror = function (evt) {
-                alert(`Error reading file ${file.name}`);
+                myAlert(`Error reading file ${file.name}`);
             }
         }
     }
@@ -638,7 +646,7 @@
         if (!error) {
             error = "OK";
         }
-        alert("Check result: " + error);
+        myAlert("Check result: " + error);
     }
 
     async function start() {
