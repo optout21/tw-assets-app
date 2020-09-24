@@ -113,7 +113,7 @@
     prs.forEach(pr => cachedPrs[pr.number] = pr);
     let h = "";
     prs.forEach(pr => {
-      h += `<option value="${pr.number}">${pr.number} ${pr.title}x</option>`;
+      h += `<option value="${pr.number}">${pr.number} ${pr.title}</option>`;
     });
     document.getElementById("pr-select").innerHTML = h;
     document.getElementById("pr-select-count").innerHTML = `${prs.length} open PRs`;

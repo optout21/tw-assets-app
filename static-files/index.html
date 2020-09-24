@@ -581,7 +581,7 @@
         const respJson = await resp.json();
         var h = '';
         if (respJson && respJson.docs) {
-            respJson.docs.forEach(t => h += `<option value='${JSON.stringify(t)}'>${t.symbol.substring(0, 10)} \t${t.name.substring(0, 20)}    (${t.type})</option>`);
+            respJson.docs.forEach(t => h += `<option value='${JSON.stringify(t)}'>${t.symbol.substring(0, 10)} \t${t.name.substring(0, 20)}    (${t.type.toLowerCase()})</option>`);
         }
         document.getElementById("search.result").innerHTML = h;
     }
@@ -678,8 +678,8 @@
         <hr />
     </div>
     <div>
-        <a href="#" onclick="tabSelect('search')">Token Search</a> |
-        <a href="#" onclick="tabSelect('add')">Add New Token</a>
+        <a href="#" onclick="tabSelect('add')">Add New Token</a> |
+        <a href="#" onclick="tabSelect('search')">Token Search</a>
         <hr />
     </div>
     <div>
@@ -694,7 +694,7 @@
                             <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
                             <button onclick="searchButton()">Search</button>
                         </div>
-                        <select class="input" id="search.result" multiple size="10" style="width: 100%"
+                        <select class="input" id="search.result" multiple size="15" style="width: 100%"
                             onchange="loadSearchResultButton()">
                             <option>(search results)</option>
                         </select>
@@ -798,7 +798,6 @@
                 <td>
                     <div>
                         <h3>Token View</h3>
-                        Please fill in the token/project details
                     </div>
                     <div>
                         <table>
@@ -816,7 +815,7 @@
                             </tr>
                             <tr>
                                 <td colspan="2">
-                                    Logo preview
+                                    Logo preview:
                                     <div id="logo-preview" style="background-color: #E0E0E0;">
                                         <span id="logo-preview-light"
                                             style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
