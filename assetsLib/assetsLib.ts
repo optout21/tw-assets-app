@@ -115,3 +115,37 @@ export class TokenInput {
         return tokenInfo;
     }
 }
+
+    // Check tokenInput for validity: everything is filled, logo is OK, etc.
+    // returns error if there is, fixed version if can be auto-fixed
+    export function checkTokenInput(tokenInput: TokenInput): [string, TokenInput|null] {
+        if (!tokenInput.name) {
+            return ["Name cannot be empty", null];
+        }
+        if (!normalizeType(tokenInput.type)) {
+            return [`Invalid token type ${tokenInput.type}`, null];
+        }
+        if (!tokenInput.contract) {
+            return ["Contract/ID cannot be empty", null];
+        }
+        if (!tokenInput.website) {
+            return ["Website cannot be empty", null];
+        }
+        if (!tokenInput.explorerUrl) {
+            return ["Explorer cannot be empty", null];
+        }
+        if (!tokenInput.description) {
+            return ["Description cannot be empty", null];
+        }
+        if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
+            return ["Logo image may not be missing", null];
+        }
+        if (tokenInput.logoStreamSize > 100000) {
+            return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
+        }
+        if (tokenInput.logoStreamType && tokenInput.logoStreamType.toLowerCase() != "image/png") {
+            return [`Logo image must be PNG image (not ${tokenInput.logoStreamType})`, null];
+        }
+        return ["", null];
+    }
+    

@@ -615,38 +615,6 @@
         }
     }
 
-    // returns error if there is, fixed version if can be auto-fixed
-    function checkTokenInput(tokenInput) {
-        if (!tokenInput.name) {
-            return ["Name cannot be empty", null];
-        }
-        if (!assetsLib.normalizeType(tokenInput.type)) {
-            return [`Invalid token type ${tokenInput.type}`, null];
-        }
-        if (!tokenInput.contract) {
-            return ["Contract/ID cannot be empty", null];
-        }
-        if (!tokenInput.website) {
-            return ["Website cannot be empty", null];
-        }
-        if (!tokenInput.explorerUrl) {
-            return ["Explorer cannot be empty", null];
-        }
-        if (!tokenInput.description) {
-            return ["Description cannot be empty", null];
-        }
-        if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
-            return ["Logo image may not be missing", null];
-        }
-        if (tokenInput.logoStreamSize > 100000) {
-            return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
-        }
-        if (tokenInput.logoStreamType && tokenInput.logoStreamType.toLowerCase() != "image/png") {
-            return [`Logo image must be PNG image (not ${tokenInput.logoStreamType})`, null];
-        }
-        return [null, null];
-    }
-
     async function checkInput() {
         // don't display check result if all inputs are emopty
         if (!tokenInput.name && !tokenInput.contract && !tokenInput.logoStream) {
@@ -654,7 +622,7 @@
             document.getElementById("input.check-result").style["color"] = "";
             return "";
         }
-        const [error, fixed] = checkTokenInput(tokenInput);
+        const [error, fixed] = assetsLib.checkTokenInput(tokenInput);
         if (!error) {
             document.getElementById("input.check-result").value = "(check ok)";
             document.getElementById("input.check-result").style["color"] = "";
@@ -666,7 +634,7 @@
 
     async function checkInputButton() {
         await checkInput();
-        [error, fixed] = checkTokenInput(tokenInput);
+        [error, fixed] = assetsLib.checkTokenInput(tokenInput);
         if (!error) {
             error = "OK";
         }
