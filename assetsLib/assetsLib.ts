@@ -22,7 +22,9 @@ export class TokenInfo {
                     return `https://tronscan.io/#/token20/${this.contract}`;
                 case "bep2":
                     return `https://explorer.binance.org/asset/${this.contract}`;
-            }
+                case "bep20":
+                    return `https://bscscan.io/token/${this.contract}`;
+                }
         }
         return "";
     }
@@ -68,20 +70,21 @@ export function normalizeType(tokenType: string) {
 
 const mainRepoOwner = "trustwallet";
 const mainRepoName = "assets";
+const mainMasterBranch = "master";
 
 // Construct TokenInfo for an existing token, specified by type and contract.
 export async function tokenInfoOfExistingToken(tokenType: string, contract: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
-    return await tokenInfoOfExistingTokenInRepo(tokenType, contract, mainRepoOwner, mainRepoName, fetchInfoJson);
+    return await tokenInfoOfExistingTokenInRepo(tokenType, contract, mainRepoOwner, mainRepoName, mainMasterBranch, fetchInfoJson);
 }
 
 // Construct TokenInfo for an existing token, specified by type and contract, possible form another repo (typically from a pull request)
-export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract: string, repoOwner: string, repoName: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
+export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract: string, repoOwner: string, repoName: string, branch: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
     let ti = new TokenInfo();
     ti.type = normalizeType(tokenType);
     ti.contract = contract;
     const chain = chainFromType(tokenType);
-    ti.logoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/master/blockchains/${chain}/assets/${ti.contract}/logo.png`;
-    ti.infoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/master/blockchains/${chain}/assets/${ti.contract}/info.json`;
+    ti.logoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/blockchains/${chain}/assets/${ti.contract}/logo.png`;
+    ti.infoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/blockchains/${chain}/assets/${ti.contract}/info.json`;
     if (fetchInfoJson) {
         // read info.json
         ti.infoString = "";
