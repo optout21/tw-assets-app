@@ -19,15 +19,16 @@
     var loginname = null;
     var repo = null;
 
+    const gitHub = "https://github.com";
     const mainRepoOwner = "trustwallet";
     const mainRepoName = "assets";
     const mainRepoFullName = mainRepoOwner + "/" + mainRepoName;
-    const mainRepoUrl = `https://github.com/${mainRepoFullName}.git`;
+    const mainRepoUrl = `${gitHub}}/${mainRepoFullName}.git`;
     const appScopes = "public_repo%20read:user";
     const prBodyFooter = `\n\nPR created by ${appName}`;
 
     function loginActionUrl() {
-        return `https://github.com/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
+        return `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
     }
 
     function authHeaders() {
@@ -46,11 +47,11 @@
             document.getElementById("user").innerHTML = `Not logged in, <a href="${loginActionUrl()}">log in</a>`;
             return;
         }
-        var html = `user: <a href="https://github.com/${loginname}/" target="_blank">${loginname}</a>\n`;
+        var html = `user: <a href="${gitHub}/${loginname}/" target="_blank">${loginname}</a>\n`;
         if (!repo) {
             html += `No fork of assets found for user ${loginname}.  Please fork the <a href="${mainRepoUrl}" target="_blank">main Assets repo</a>\n`;
         } else {
-            html += `repo: <a href="https://github.com/${loginname}/${repo}.git" target="_blank">${loginname}/${repo}</a>\n`;
+            html += `repo: <a href="${gitHub}/${loginname}/${repo}.git" target="_blank">${loginname}/${repo}</a>\n`;
         }
         html += `<a href="#" onclick="logout();">Logout</a>\n`;
 
@@ -287,14 +288,82 @@
         inputLogoSetStream(stream, "test" + testLogoIndex, streamArray.byteLength, mime);
     }
 
-    async function checkPRs() {
-        if (!loginname || !repo) {
+    async function getPrFiles(prNum) {
+        const url = `https://api.github.com/repos/${mainRepoFullName}/pulls/${prNum}/files`;
+        let resp = await fetch(url);
+        if (resp.status != 200) {
+            myAlert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
+            return [];
+        }
+        const respJson = await resp.json();
+        const files = respJson.map(e => e.filename);
+        return files;
+    }
+
+    async function loadOpenPrs() {
+        const pulls = await getPulls(mainRepoOwner, mainRepoName);
+        var html = "";
+        pulls.forEach(pr => html += `<option value='${JSON.stringify(pr, null, 2)}''>${pr.number} ${pr.title}</option>`);
+        document.getElementById("prs.result").innerHTML = html;
+        document.getElementById("prs.count").innerHTML = `${pulls.length} PRs`;
+    }
+
+    function clearTokenInfo() {
+        tokenInfo = new assetsLib.TokenInfo();
+    }
+
+    async function loadSelectedPrButton() {
+        const prInfo = JSON.parse(document.getElementById("prs.result").value);
+        if (!prInfo) {
             return;
         }
-        const pulls = await getPulls(loginname, repo);
-        var t = "";
-        pulls.forEach(pr => t += pr.number + " ");
-        addLog("PRs in fork: " + t);
+        clearTokenInfo();
+        prInfo.owner = prInfo.head.user.login;
+        prInfo.repo = prInfo.head.repo.name;
+        prInfo.branch = prInfo.head.ref;
+        console.log(`PR ${prInfo.number}: ${prInfo.owner}/${prInfo.repo}/${prInfo.branch}`);
+
+        document.getElementById("pr-info.title").innerHTML = `<a href="${gitHub}/${mainRepoFullName}/pull/${prInfo.number}" target="_blank" rel="noopener noreferrer"><strong>PR #${prInfo.number}</strong></a>: ${prInfo.title}`;
+        document.getElementById("pr-info.repo").innerHTML = `<a href="${gitHub}/${prInfo.owner}/${prInfo.repo}" target="_blank" rel="noopener noreferrer">${prInfo.owner}/${prInfo.repo}</a>/${prInfo.branch}`;
+
+        document.getElementById("pr-info.tokens").innerHTML = "";
+        const files = await getPrFiles(prInfo.number);
+        if (!files || files.length == 0) {
+            myAlert(`Could not retrieve files from PR ${prInfo.number}`);
+            return;
+        }
+        const ids = assetsLib.tokenIdsFromFiles(files);
+        if (!ids || ids.length == 0) {
+            myAlert(`Could not retrieve tokens from PR ${prInfo.number}`);
+            return;
+        }
+        let html = "";
+        ids.forEach(id => {
+            let contractInfo = prInfo;
+            const type = id[0];
+            const contract = id[1];
+            contractInfo["type"] = type;
+            contractInfo["id"] = contract;
+            html += `<option value='${JSON.stringify(contractInfo, null, 2)}'>${type}: ${contract})</option>`;
+        });
+        document.getElementById("pr-info.tokens").innerHTML = html;
+        // load first
+            if (ids && ids.length >= 1) {
+            const ti = await assetsLib.tokenInfoOfExistingTokenInRepo(ids[0][0], ids[0][1], prInfo.owner, prInfo.repo, true);
+            if (ti) {
+                tokenInfo = ti;
+            }
+        }
+        await loadTokenInfo();
+    }
+
+    async function loadTokensFromPr() {
+        const contract = JSON.parse(document.getElementById("pr-info.tokens").value);
+        const ti = await assetsLib.tokenInfoOfExistingTokenInRepo(contract.type, contract.id, contract.owner, contract.repo, true);
+        if (ti) {
+            tokenInfo = ti;
+            await loadTokenInfo();
+        }
     }
 
     async function getBranchRef(branch) {
@@ -541,7 +610,7 @@
             createPullError(`Could not create PR`);
             return;
         }
-        const pullUrl = `https://github.com/${loginname}/${repo}/pull/${pullNumber}`;
+        const pullUrl = `${gitHub}/${loginname}/${repo}/pull/${pullNumber}`;
         myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
     }
 
@@ -551,15 +620,20 @@
     }
 
     async function tabSelect(tab) {
-        document.getElementById("tab-search").hidden = true;
         document.getElementById("tab-add").hidden = true;
+        document.getElementById("tab-prs").hidden = true;
+        document.getElementById("tab-search").hidden = true;
         switch (tab) {
-            case "search":
-                document.getElementById("tab-search").hidden = false;
-                break;
             case "add":
             default:
                 document.getElementById("tab-add").hidden = false;
+                break;
+            case "search":
+                document.getElementById("tab-search").hidden = false;
+                break;
+            case "prs":
+                document.getElementById("tab-prs").hidden = false;
+                await loadOpenPrs();
                 break;
         }
     }
@@ -591,19 +665,6 @@
         const tokenJson = JSON.parse(token);
         tokenInfo = await assetsLib.tokenInfoOfExistingToken(tokenJson.type, tokenJson.token_id, true);
         loadTokenInfo();
-    }
-
-    async function loadExistingToken(tokenType, contract, repo, branch) {
-        clearToken();
-        document.getElementById("token-contract").innerText = contract;
-        var loUrl = logoUrl(chain, contract, repo, branch);
-        document.getElementById("logo-preview-light").innerHTML = logoPreviewHtml(null, loUrl, true);
-        document.getElementById("logo-preview-dark").innerHTML = logoPreviewHtml(null, loUrl, false);
-        document.getElementById("logo-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${loUrl}">Logo file</a>`;
-        var inUrl = infoUrl(chain, contract, repo, branch);
-        document.getElementById("info-file").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${inUrl}">Info file</a>`;
-        var esUrl = etherscanUrl(contract);
-        document.getElementById("explorer").innerHTML = `<a target="_blank" rel="noopener noreferrer" href="${esUrl}">Token explorer</a>`;
     }
 
     async function logoFileSelected() {
@@ -664,7 +725,6 @@
         }
         refreshUser();
         tokenInputChanged();
-        await checkPRs();
     }
 </script>
 
@@ -679,30 +739,12 @@
     </div>
     <div>
         <a href="#" onclick="tabSelect('add')">Add New Token</a> |
+        <a href="#" onclick="tabSelect('prs')">Pull Requests</a> |
         <a href="#" onclick="tabSelect('search')">Token Search</a>
-        <hr />
     </div>
     <div>
         <table>
             <tr>
-                <td>
-                    <div id="tab-search" hidden="true">
-                        <div>
-                            <h3>Token Search</h3>
-                        </div>
-                        <div>
-                            <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
-                            <button onclick="searchButton()">Search</button>
-                        </div>
-                        <select class="input" id="search.result" multiple size="15" style="width: 100%"
-                            onchange="loadSearchResultButton()">
-                            <option>(search results)</option>
-                        </select>
-                        <div>
-                            <button onclick="loadSearchResultButton()">Load</button>
-                        </div>
-                    </div>
-                </td>
                 <td>
                     <div id="tab-add">
                         <div>
@@ -792,6 +834,53 @@
                                     </td>
                                 </tr>
                             </table>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div id="tab-prs" hidden="true">
+                        <div>
+                            <h3>Pull Requests</h3>
+                        </div>
+                        <div>
+                            <button onclick="loadPrs()">Search</button>
+                            <span id="prs.count"></span>
+                        </div>
+                        <select class="input" id="prs.result" multiple size="12" style="width: 100%"
+                            onchange="loadSelectedPrButton()">
+                            <option>(search results)</option>
+                        </select>
+                        <div id="pr-info" style="width: 100%">
+                            <hr/>
+                            <div>
+                                <span id="pr-info.title">PR</span>
+                                <br>
+                                repo: <span id="pr-info.repo"></span>
+                            </div>
+                            <div>
+                                <div>Detected token(s) in PR:</div>
+                                <select class="input" id="pr-info.tokens" multiple size="2" style="width: 100%"
+                                    onchange="loadTokensFromPr()">
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div id="tab-search" hidden="true">
+                        <div>
+                            <h3>Token Search</h3>
+                        </div>
+                        <div>
+                            <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
+                            <button onclick="searchButton()">Search</button>
+                        </div>
+                        <select class="input" id="search.result" multiple size="20" style="width: 100%"
+                            onchange="loadSearchResultButton()">
+                            <option>(search results)</option>
+                        </select>
+                        <div>
+                            <button onclick="loadSearchResultButton()">Load</button>
                         </div>
                     </div>
                 </td>

@@ -66,21 +66,65 @@ export function normalizeType(tokenType: string) {
     }
 }
 
+const mainRepoOwner = "trustwallet";
+const mainRepoName = "assets";
+
+// Construct TokenInfo for an existing token, specified by type and contract.
 export async function tokenInfoOfExistingToken(tokenType: string, contract: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
+    return await tokenInfoOfExistingTokenInRepo(tokenType, contract, mainRepoOwner, mainRepoName, fetchInfoJson);
+}
+
+// Construct TokenInfo for an existing token, specified by type and contract, possible form another repo (typically from a pull request)
+export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract: string, repoOwner: string, repoName: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
     let ti = new TokenInfo();
     ti.type = normalizeType(tokenType);
     ti.contract = contract;
     const chain = chainFromType(tokenType);
-    ti.logoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${ti.contract}/logo.png`;
-    ti.infoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${ti.contract}/info.json`;
+    ti.logoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/master/blockchains/${chain}/assets/${ti.contract}/logo.png`;
+    ti.infoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/master/blockchains/${chain}/assets/${ti.contract}/info.json`;
     if (fetchInfoJson) {
         // read info.json
+        ti.infoString = "";
         let resp = await fetch(ti.infoUrl);
         if (resp.status == 200) {
             ti.infoString = await resp.text();
         }
     }
     return ti;
+}
+
+// Infer token ID from a logo filename.
+// Input: filename, such as "blockchains/ethereum/assets/0x439662426153C4fCB9c6988962FB16475D13d95B/logo.png"
+// Output: [type, id], like ["erc20", "0x439662426153C4fCB9c6988962FB16475D13d95B"]
+export function tokenIdFromFile(filename: string): [string, string] {
+    const types: string[] = ["erc20", "bep2", "bep20", "trc10", "trc20"];
+    let id: [string, string] = ["", ""];
+    types.forEach(type => {
+        const chain = chainFromType(type);
+        const prefix = `blockchains/${chain}/assets/`;
+        const suffix = "/logo.png";
+        if (filename.startsWith(prefix)) {
+            if (filename.endsWith(suffix)) {
+                id = [type, filename.substring(prefix.length, filename.length - suffix.length)];
+            }
+        }
+    });
+    // matched none
+    return id;
+}
+
+// Infer token IDs from a logo filenames.
+// Input: array with filenames, such as ["blockchains/ethereum/assets/0x439662426153C4fCB9c6988962FB16475D13d95B/logo.png"]
+// Output: array of token IDs, [type, id], like [["erc20", "0x439662426153C4fCB9c6988962FB16475D13d95B"]]
+export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
+    let ids: [string, string][] = [];
+    filenames.forEach(file => {
+        const [type, id] = tokenIdFromFile(file);
+        if (type && id) {
+            ids.push([type, id]);
+        }
+    });
+    return ids;
 }
 
 /// Class for entering input for a token
