@@ -226,14 +226,15 @@
         document.getElementById("info.links").innerHTML = links;
     }
 
-    async function refreshTokenInfo() {
+    async function checkAndRefreshTokenInfo() {
+        await checkInput();
         tokenInfo = tokenInput.toTokenInfo();
         await loadTokenInfo();
     }
 
     async function tokenInputChanged() {
         refreshTokenInputFromUI();
-        await refreshTokenInfo();
+        await checkAndRefreshTokenInfo();
     }
 
     const testLogoUrls = [
@@ -249,29 +250,33 @@
         if (!tokenInput) {
             tokenInput = new assetsLib.TokenInput();
         }
-        let text = "(no image)";
-        if (stream) {
-            tokenInput.logoStream = stream;
-            text = "(";
-            
+        if (!stream) {
+            tokenInput.logoStream = null;
             tokenInput.logoStreamSize = 0;
-            if (hintSize && hintSize > 0) {
-                tokenInput.logoStreamSize = hintSize;
-                text += `${hintSize} bytes`;
-            } else {
-                text += `${tokenInput.logoStream.length} base64 bytes`;
-            }
-            if (hintName) {
-                text += `, ${hintName}`;
-            }
-            tokenInput.logoStreamType = "";
-            if (hintMime) {
-                tokenInput.logoStreamType = hintMime;
-                text += `, ${hintMime}`;
-            }
-            
-            text += ")";
+            tokenInput.logoStreamType = null;
+            document.getElementById("input.logo-input").innerHTML = "(no image)";
+            return;
         }
+        tokenInput.logoStream = stream;
+        let text = "(";
+
+        tokenInput.logoStreamSize = 0;
+        if (hintSize && hintSize > 0) {
+            tokenInput.logoStreamSize = hintSize;
+            text += `${hintSize} bytes`;
+        } else {
+            text += `${tokenInput.logoStream.length} base64 bytes`;
+        }
+        if (hintName) {
+            text += `, ${hintName}`;
+        }
+        tokenInput.logoStreamType = "";
+        if (hintMime) {
+            tokenInput.logoStreamType = hintMime;
+            text += `, ${hintMime}`;
+        }
+
+        text += ")";
         document.getElementById("input.logo-input").innerHTML = text;
     }
 
@@ -602,12 +607,70 @@
                 var contents = evt.target.result;
                 var base64 = arrayBufferToBase64(contents);
                 inputLogoSetStream(base64, file.name, file.size, file.type);
-                await refreshTokenInfo();
+                await checkAndRefreshTokenInfo();
             }
             reader.onerror = function (evt) {
                 alert(`Error reading file ${file.name}`);
             }
         }
+    }
+
+    // returns error if there is, fixed version if can be auto-fixed
+    function checkTokenInput(tokenInput) {
+        if (!tokenInput.name) {
+            return ["Name cannot be empty", null];
+        }
+        if (!assetsLib.normalizeType(tokenInput.type)) {
+            return [`Invalid token type ${tokenInput.type}`, null];
+        }
+        if (!tokenInput.contract) {
+            return ["Contract/ID cannot be empty", null];
+        }
+        if (!tokenInput.website) {
+            return ["Website cannot be empty", null];
+        }
+        if (!tokenInput.explorerUrl) {
+            return ["Explorer cannot be empty", null];
+        }
+        if (!tokenInput.description) {
+            return ["Description cannot be empty", null];
+        }
+        if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
+            return ["Logo image may not be missing", null];
+        }
+        if (tokenInput.logoStreamSize > 100000) {
+            return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
+        }
+        if (tokenInput.logoStreamType && tokenInput.logoStreamType.toLowerCase() != "image/png") {
+            return [`Logo image must be PNG image (not ${tokenInput.logoStreamType})`, null];
+        }
+        return [null, null];
+    }
+
+    async function checkInput() {
+        // don't display check result if all inputs are emopty
+        if (!tokenInput.name && !tokenInput.contract && !tokenInput.logoStream) {
+            document.getElementById("input.check-result").value = "";
+            document.getElementById("input.check-result").style["color"] = "";
+            return "";
+        }
+        const [error, fixed] = checkTokenInput(tokenInput);
+        if (!error) {
+            document.getElementById("input.check-result").value = "(check ok)";
+            document.getElementById("input.check-result").style["color"] = "";
+            return;
+        }
+        document.getElementById("input.check-result").value = error;
+        document.getElementById("input.check-result").style["color"] = "red";
+    }
+
+    async function checkInputButton() {
+        await checkInput();
+        [error, fixed] = checkTokenInput(tokenInput);
+        if (!error) {
+            error = "OK";
+        }
+        alert("Check result: " + error);
     }
 
     async function start() {
@@ -682,7 +745,8 @@
                                 <tr>
                                     <td>Type:</td>
                                     <td>
-                                        <select id="input.type" name="type" class="input">
+                                        <select id="input.type" name="type" class="input" onchange="tokenInputChanged()"
+                                            oninput="tokenInputChanged()">
                                             <option value="ERC20">ERC20 (Ethereum)</option>
                                             <option value="BEP2">BEP2 (Binance)</option>
                                             <option value="BEP20">BEP20 (Binance Smart Chain)</option>
@@ -737,10 +801,17 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td>Check result:</td>
+                                    <td><textarea class="input" id="input.check-result" style="width: 100%;" rows="2"
+                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()"></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td></td>
                                     <td>
                                         <button class="button" type="button" onclick="createBranchAndPull()">Create
                                             PR</button>
+                                        <button class="button" type="button" onclick="checkInputButton()">Check</button>
                                         <button class="button" type="button" onclick="clearInput()">Clear</button>
                                     </td>
                                 </tr>

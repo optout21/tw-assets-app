@@ -5,6 +5,8 @@ export class TokenInfo {
     logoUrl: string = "";
     // the logo contents, in base64.  If set, it is used, if empty, Url is used.
     logoStream: string = "";
+    logoStreamSize: number = 0;
+    logoStreamType: string = "";
     infoUrl: string = "";
     info: unknown = {};
     infoString: string = "{}";
@@ -45,7 +47,7 @@ export function chainFromType(tokenType: string) {
     }
 }
 
-function typeFromType(tokenType: string) {
+export function normalizeType(tokenType: string) {
     switch (tokenType.toLowerCase()) {
         case "erc20":
             return "ERC20";
@@ -60,13 +62,13 @@ function typeFromType(tokenType: string) {
         case "bep20":
             return "BEP20";
         default:
-            return "unknown"
+            return ""
     }
 }
 
 export async function tokenInfoOfExistingToken(tokenType: string, contract: string, fetchInfoJson: boolean = false): Promise<TokenInfo> {
     let ti = new TokenInfo();
-    ti.type = typeFromType(tokenType);
+    ti.type = normalizeType(tokenType);
     ti.contract = contract;
     const chain = chainFromType(tokenType);
     ti.logoUrl = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${ti.contract}/logo.png`;
@@ -86,7 +88,10 @@ export class TokenInput {
     name: string = "";
     type: string = "";
     contract: string = "";
+    // base64-encoded logo image stream
     logoStream: string = "";
+    logoStreamSize: number = 0;
+    logoStreamType: string = "";
     website: string = "";
     explorerUrl: string = "";
     description: string = "";
@@ -97,6 +102,8 @@ export class TokenInput {
         tokenInfo.contract = this.contract;
         tokenInfo.logoUrl = "";
         tokenInfo.logoStream = this.logoStream;
+        tokenInfo.logoStreamSize = this.logoStreamSize;
+        tokenInfo.logoStreamType = this.logoStreamType;
         tokenInfo.infoUrl = "";
         tokenInfo.info = {
             name: this.name,
