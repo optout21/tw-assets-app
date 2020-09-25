@@ -645,7 +645,7 @@
             return;
         }
         document.getElementById("search.result").innerHTML = "";
-        const coinTypes = "60,195,714,2000714"; // eth, tron, binance, bep20
+        const coinTypes = "60,195,714,20000714"; // eth, tron, binance, bep20
         const url = `https://api.trustwallet.com/v2/tokens/list?networks=${coinTypes}&query=${query}`;
         let resp = await fetch(url);
         if (resp.status != 200) {

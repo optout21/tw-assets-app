@@ -11,10 +11,11 @@ Use cases
 Use cases -- contributor
 - Add new token
  -- Log on with GitHub account, optionally register, authorize app, create fork repo
- -- Enter details: name, type, contract, upload logo, info fields (website, desc, explorer)
- -- Upload logo from file on computer, or enter URL
- -- Most frequent token types supported: Eth, Binance and BSC, Tron
- -- Check info, logo; preview logo; check circulation
+ -- Enter details: name, type, contract, upload logo, info fields (website, desc, explorer, ...)
+ -- Upload logo from local file
+ -- Most frequent token types supported: Ethereum ERC20, Binance BEP2 and BEP20 (smart chain), Tron TRC10 and TRC20
+ -- Shwo logo preview
+ -- Check info, logo; check circulation
  -- Adjustments: logo (resize, compress), contract address (checksum)
  -- Create PR (create new branch, commit, PR)
 - Pay for open PR
@@ -22,10 +23,11 @@ Use cases -- contributor
 
 Use cases -- maintainer
 - List open PRs
-- Check a PR: logo, info, explorer
- -- PR from list, or number
-- Search among existing tokens
-- View token properties (existing from search result, by contract, or from PR)
+- List tokens from PR (typically one, but can be more)
+- Show token info (of single token or selected token)
+- Show: ID, logo preview, info (if available); links to logo, info, explorer
+- Search among existing tokens (using backend API)
+- Show token info (of selected token)
 
 Open:
 - Refresh/recreate fork repo

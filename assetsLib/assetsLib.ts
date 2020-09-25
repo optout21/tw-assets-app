@@ -23,7 +23,7 @@ export class TokenInfo {
                 case "bep2":
                     return `https://explorer.binance.org/asset/${this.contract}`;
                 case "bep20":
-                    return `https://bscscan.io/token/${this.contract}`;
+                    return `https://bscscan.com/token/${this.contract}`;
                 }
         }
         return "";
@@ -43,7 +43,7 @@ export function chainFromType(tokenType: string) {
         case "bep8":
             return "binance";
         case "bep20":
-            return "bsc";
+            return "smartchain";
         default:
             return "unknown"
     }
