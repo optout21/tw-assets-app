@@ -4,7 +4,8 @@
   "description": "Github App to help adding token info (assets) to Trust Wallet Assets repository.",
   "main": "index.js",
   "scripts": {
-    "start": "tsc -p assetsLib && node index.js",
+    "build": "cd assetsLib && npm run build && cp dist/assetsLib.es.js ../static-files",
+    "start": "npm run build && node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
