@@ -108,4 +108,5 @@ assetsLib./node_modules
 assetsLib/assetsLib.js
 assetsLib/assetsLib.es.js
 
+static-files/bundle.js
 static-files/assetsLib.es.js

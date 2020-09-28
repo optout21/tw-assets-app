@@ -20,6 +20,7 @@
   "homepage": "https://github.com/trustwallet/tw-assets-managment#readme",
   "dependencies": {
     "@octokit/auth-oauth-app": "^3.0.5",
+    "@octokit/request": "^5.4.9",
     "@octokit/rest": "^18.0.6",
     "dotenv": "^8.2.0",
     "finalhandler": "^1.1.2",
@@ -27,6 +28,8 @@
     "serve-static": "^1.14.1"
   },
   "devDependencies": {
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12"
   }
 }

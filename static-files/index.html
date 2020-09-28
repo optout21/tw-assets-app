@@ -5,11 +5,13 @@
 </head>
 
 <script type="module">
-    import { request } from "https://cdn.skypack.dev/@octokit/request";
+    //import { request } from "https://cdn.skypack.dev/@octokit/request";
     import * as assetsLib from "./assetsLib.es.js";
-    window.request = request;
+    //window.request = request;
     window.assetsLib = assetsLib;
 </script>
+
+<script type="module" src="bundle.js"></script>
 
 <script>
     const appName = "tw-assets-management";
@@ -36,7 +38,7 @@
     }
 
     async function getUser() {
-        const result = await request("GET /user", { headers: authHeaders() });
+        const result = await script.octoRequest("GET /user", { headers: authHeaders() });
         return result.data;
     }
 
@@ -95,12 +97,12 @@
     }
 
     async function getUserRepos() {
-        const result = await request("GET /user/repos", { headers: authHeaders() });
+        const result = await script.octoRequest("GET /user/repos", { headers: authHeaders() });
         return result.data;
     }
 
     async function getRepo(owner, repo) {
-        const result = await request("GET /repos/:owner/:repo", {
+        const result = await script.octoRequest("GET /repos/:owner/:repo", {
             headers: authHeaders(),
             owner: owner,
             repo: repo
@@ -142,7 +144,7 @@
     }
 
     async function getPulls(owner, repo) {
-        const result = await request("GET /repos/:owner/:repo/pulls", {
+        const result = await script.octoRequest("GET /repos/:owner/:repo/pulls", {
             headers: authHeaders(),
             owner: owner,
             repo: repo
@@ -367,7 +369,7 @@
     }
 
     async function getBranchRef(branch) {
-        const result = await request("GET /repos/{owner}/{repo}/git/ref/{ref}", {
+        const result = await script.octoRequest("GET /repos/{owner}/{repo}/git/ref/{ref}", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
@@ -378,7 +380,7 @@
 
     async function createBranch(branchName) {
         const ref = await getBranchRef("master");
-        const result = await request("POST /repos/:owner/:repo/git/refs", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/refs", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
@@ -396,7 +398,7 @@
             owner1 = loginname;
             repo1 = repo;
         }
-        const result = await request("POST /repos/:owner/:repo/pulls", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/pulls", {
             headers: authHeaders(),
             owner: owner1,
             repo: repo1,
@@ -418,7 +420,7 @@
     }
 
     async function createBlob(content, encoding) {
-        const result = await request("POST /repos/:owner/:repo/git/blobs", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/blobs", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
@@ -468,7 +470,7 @@
     }
 
     async function createTree(baseSha, fileInfos) {
-        const result = await request("POST /repos/:owner/:repo/git/trees", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/trees", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
@@ -479,7 +481,7 @@
     }
 
     async function createCommit(baseSha, tree, tokenName) {
-        const result = await request("POST /repos/:owner/:repo/git/commits", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/commits", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
@@ -491,7 +493,7 @@
     }
 
     async function updateReference(ref, sha) {
-        const result = await request("POST /repos/:owner/:repo/git/refs/:ref", {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/refs/:ref", {
             headers: authHeaders(),
             owner: loginname,
             repo: repo,
