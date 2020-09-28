@@ -509,7 +509,7 @@
         document.getElementById("name").value = "LegumeToken";
         document.getElementById("input.type").value = "ERC20";
         document.getElementById("contract").value = sampleEthContract;
-        document.getElementById("website").value = "https://legume.fi";
+        document.getElementById("website").value = "https://en.wikipedia.org/wiki/Legume";
         document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
         document.getElementById("explorer").value = `https://etherscan.io/token/${sampleEthContract}`;
         await debugTestLogoGetNext();
@@ -701,7 +701,7 @@
             document.getElementById("explorer").value = explorer;
         }
 
-        const [error, fixed] = script.assets.checkTokenInput(tokenInput);
+        const [error, fixed] = await script.assets.checkTokenInput(tokenInput);
         if (!error) {
             document.getElementById("input.check-result").value = "(check ok)";
             document.getElementById("input.check-result").style["color"] = "";
@@ -713,7 +713,7 @@
 
     async function checkInputButton() {
         await checkInput();
-        [error, fixed] = script.assets.checkTokenInput(tokenInput);
+        [error, fixed] = await script.assets.checkTokenInput(tokenInput);
         if (!error) {
             error = "OK";
         }

@@ -39,7 +39,7 @@ export class TokenInput {
 
 // Check tokenInput for validity: everything is filled, logo is OK, etc.
 // returns error if there is, fixed version if can be auto-fixed
-export function checkTokenInput(tokenInput: TokenInput): [string, TokenInput | null] {
+export async function checkTokenInput(tokenInput: TokenInput): Promise<[string, TokenInput | null]> {
     if (!tokenInput.name) {
         return ["Name cannot be empty", null];
     }
@@ -78,8 +78,26 @@ export function checkTokenInput(tokenInput: TokenInput): [string, TokenInput | n
             return [`Contract is not in checksum format, should be ${inChecksum}`, fixed];
         }
     }
-    //const isize = getImageDimensions("x");//tokenInput.logoStream);
-    //alert(isize);
+    if (tokenInput.explorerUrl) {
+        try {
+            const result = await fetch(tokenInput.explorerUrl);
+            if (result.status != 200) {
+                return [`ExplorerUrl does not exist, status ${result.status}, url ${tokenInput.explorerUrl}`, null];
+            }
+        } catch (error) {
+            return [`ExplorerUrl does not exist, error ${error}, url ${tokenInput.explorerUrl}`, null];
+        }
+    }
+    if (tokenInput.website) {
+        try {
+            const result = await fetch(tokenInput.website);
+            if (result.status != 200) {
+                return [`Website does not exist, status ${result.status}, url ${tokenInput.website}`, null];
+            }
+        } catch (error) {
+            return [`Website does not exist, error ${error}, url ${tokenInput.website}`, null];
+        }
+    }
 
     return ["", null];
 }
