@@ -1,2 +1,2 @@
 export { TokenInfo } from "./tokenInfo";
-export { TokenInput } from "./tokenInput";
+export { TokenInput, checkTokenInput } from "./tokenInput";

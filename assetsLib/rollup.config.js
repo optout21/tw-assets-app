@@ -1,5 +1,6 @@
 import typescript from 'rollup-plugin-typescript2';
 import pkg from '../package.json';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default {
     input: './assetsLib.ts',
@@ -22,5 +23,6 @@ export default {
         typescript({
             typescript: require('typescript'),
         }),
+        nodeResolve()
     ],
 }

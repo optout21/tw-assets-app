@@ -1,4 +1,7 @@
 import { TokenInfo, normalizeType } from "./tokenInfo";
+//import * as image_size from "image-size";
+
+//const getImageDimensions = (path: string) => image_size.imageSize(path);
 
 /// Class for entering input for a token
 export class TokenInput {
@@ -57,11 +60,14 @@ export function checkTokenInput(tokenInput: TokenInput): [string, TokenInput | n
     if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
         return ["Logo image may not be missing", null];
     }
-    if (tokenInput.logoStreamSize > 100000) {
-        return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
-    }
     if (tokenInput.logoStreamType && tokenInput.logoStreamType.toLowerCase() != "image/png") {
         return [`Logo image must be PNG image (not ${tokenInput.logoStreamType})`, null];
     }
+    if (tokenInput.logoStreamSize > 100000) {
+        return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
+    }
+    //const isize = getImageDimensions("x");//tokenInput.logoStream);
+    //alert(isize);
+
     return ["", null];
 }
