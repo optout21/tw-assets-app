@@ -1,4 +1,5 @@
 import { TokenInfo, normalizeType } from "./tokenInfo";
+import { isEthereumAddress, toChecksum } from "./eth-address";
 //import * as image_size from "image-size";
 
 //const getImageDimensions = (path: string) => image_size.imageSize(path);
@@ -65,6 +66,17 @@ export function checkTokenInput(tokenInput: TokenInput): [string, TokenInput | n
     }
     if (tokenInput.logoStreamSize > 100000) {
         return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
+    }
+    if (tokenInput.type.toLowerCase() === "erc20") {
+        if (!isEthereumAddress(tokenInput.contract)) {
+            return [`Contract is not a valid Ethereum address!`, null];
+        }
+        const inChecksum = toChecksum(tokenInput.contract);
+        if (inChecksum !== tokenInput.contract) {
+            let fixed = tokenInput;
+            fixed.contract = inChecksum;
+            return [`Contract is not in checksum format, should be ${inChecksum}`, fixed];
+        }
     }
     //const isize = getImageDimensions("x");//tokenInput.logoStream);
     //alert(isize);

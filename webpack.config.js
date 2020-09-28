@@ -8,5 +8,8 @@ module.exports = {
     libraryTarget: 'global',
     library: 'script'
   },
+  resolve: {
+    modules: ['node_modules']
+  },
   mode: "development"
 };
