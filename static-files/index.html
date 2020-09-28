@@ -693,6 +693,14 @@
             document.getElementById("input.check-result").style["color"] = "";
             return "";
         }
+
+        // auto-fill explorer
+        if (tokenInput.contract && !tokenInput.explorerUrl) {
+            const explorer = script.assets.explorerUrl(tokenInput.type, tokenInput.contract);
+            tokenInput.explorerUrl = explorer;
+            document.getElementById("explorer").value = explorer;
+        }
+
         const [error, fixed] = script.assets.checkTokenInput(tokenInput);
         if (!error) {
             document.getElementById("input.check-result").value = "(check ok)";
@@ -726,7 +734,7 @@
             return;
         }
         refreshUser();
-        tokenInputChanged();
+        await tokenInputChanged();
     }
 </script>
 

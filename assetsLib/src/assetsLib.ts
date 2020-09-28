@@ -3,7 +3,8 @@ export {
     tokenIdsFromFiles,
     tokenInfoOfExistingToken,
     tokenInfoOfExistingTokenInRepo,
-    chainFromType
+    chainFromType,
+    explorerUrl
 } from "./tokenInfo";
 export {
     TokenInput,

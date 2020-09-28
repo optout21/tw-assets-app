@@ -12,22 +12,26 @@ export class TokenInfo {
     infoString: string = "{}";
 
     explorerUrl(): string {
-        if (this.contract) {
-            switch (this.type.toLowerCase()) {
-                case "erc20":
-                    return `https://etherscan.io/token/${this.contract}`;
-                case "trc10":
-                    return `https://tronscan.io/#/token/${this.contract}`;
-                case "trc20":
-                    return `https://tronscan.io/#/token20/${this.contract}`;
-                case "bep2":
-                    return `https://explorer.binance.org/asset/${this.contract}`;
-                case "bep20":
-                    return `https://bscscan.com/token/${this.contract}`;
-                }
-        }
-        return "";
+        return explorerUrl(this.type, this.contract);
     }
+}
+
+export function explorerUrl(type: string, contract: string): string {
+    if (contract) {
+        switch (type.toLowerCase()) {
+            case "erc20":
+                return `https://etherscan.io/token/${contract}`;
+            case "trc10":
+                return `https://tronscan.io/#/token/${contract}`;
+            case "trc20":
+                return `https://tronscan.io/#/token20/${contract}`;
+            case "bep2":
+                return `https://explorer.binance.org/asset/${contract}`;
+            case "bep20":
+                return `https://bscscan.com/token/${contract}`;
+            }
+    }
+    return "";
 }
 
 export function chainFromType(tokenType: string) {
