@@ -1,2 +1,11 @@
-export { TokenInfo } from "./tokenInfo";
-export { TokenInput, checkTokenInput } from "./tokenInput";
+export {
+    TokenInfo,
+    tokenIdsFromFiles,
+    tokenInfoOfExistingToken,
+    tokenInfoOfExistingTokenInRepo,
+    chainFromType
+} from "./tokenInfo";
+export {
+    TokenInput,
+    checkTokenInput
+} from "./tokenInput";
