@@ -6,9 +6,9 @@
 
 <script type="module">
     //import { request } from "https://cdn.skypack.dev/@octokit/request";
-    import * as assetsLib from "./assetsLib.es.js";
+    //import * as assetsLib from "./assetsLib.es.js";
     //window.request = request;
-    window.assetsLib = assetsLib;
+    //window.assetsLib = assetsLib;
 </script>
 
 <script type="module" src="bundle.js"></script>
@@ -251,7 +251,7 @@
 
     function inputLogoSetStream(stream, hintName, hintSize, hintMime) {
         if (!tokenInput) {
-            tokenInput = new assetsLib.TokenInput();
+            tokenInput = new script.assets.TokenInput();
         }
         if (!stream) {
             tokenInput.logoStream = null;
@@ -311,7 +311,7 @@
     }
 
     function clearTokenInfo() {
-        tokenInfo = new assetsLib.TokenInfo();
+        tokenInfo = new script.assets.TokenInfo();
     }
 
     async function loadSelectedPrButton() {
@@ -334,7 +334,7 @@
             myAlert(`Could not retrieve files from PR ${prInfo.number}`);
             return;
         }
-        const ids = assetsLib.tokenIdsFromFiles(files);
+        const ids = script.assets.tokenIdsFromFiles(files);
         if (!ids || ids.length == 0) {
             myAlert(`Could not retrieve tokens from PR ${prInfo.number}`);
             return;
@@ -351,7 +351,7 @@
         document.getElementById("pr-info.tokens").innerHTML = html;
         // load first
         if (ids && ids.length >= 1) {
-            const ti = await assetsLib.tokenInfoOfExistingTokenInRepo(ids[0][0], ids[0][1], prInfo.owner, prInfo.repo, prInfo.branch, true);
+            const ti = await script.assets.tokenInfoOfExistingTokenInRepo(ids[0][0], ids[0][1], prInfo.owner, prInfo.repo, prInfo.branch, true);
             if (ti) {
                 tokenInfo = ti;
             }
@@ -361,7 +361,7 @@
 
     async function loadTokensFromPr() {
         const contract = JSON.parse(document.getElementById("pr-info.tokens").value);
-        const ti = await assetsLib.tokenInfoOfExistingTokenInRepo(contract.type, contract.id, contract.owner, contract.repo, contract.branch, true);
+        const ti = await script.assets.tokenInfoOfExistingTokenInRepo(contract.type, contract.id, contract.owner, contract.repo, contract.branch, true);
         if (ti) {
             tokenInfo = ti;
             await loadTokenInfo();
@@ -518,7 +518,7 @@
 
     function refreshTokenInputFromUI() {
         if (!tokenInput) {
-            tokenInput = new assetsLib.TokenInput();
+            tokenInput = new script.assets.TokenInput();
         }
         tokenInput.name = document.getElementById("name").value;
         tokenInput.type = document.getElementById("input.type").value;
@@ -569,7 +569,7 @@
             return;
         }
 
-        const chain = assetsLib.chainFromType(tokenInfo.type);
+        const chain = script.assets.chainFromType(tokenInfo.type);
         if (!chain || chain == "unknown") {
             createPullError(`Could not retrieve chain from token type ${tokenInfo.type}`);
             return;
@@ -665,7 +665,7 @@
     async function loadSearchResultButton() {
         const token = document.getElementById("search.result").value;
         const tokenJson = JSON.parse(token);
-        tokenInfo = await assetsLib.tokenInfoOfExistingToken(tokenJson.type, tokenJson.token_id, true);
+        tokenInfo = await script.assets.tokenInfoOfExistingToken(tokenJson.type, tokenJson.token_id, true);
         loadTokenInfo();
     }
 
@@ -693,7 +693,7 @@
             document.getElementById("input.check-result").style["color"] = "";
             return "";
         }
-        const [error, fixed] = assetsLib.checkTokenInput(tokenInput);
+        const [error, fixed] = script.assets.checkTokenInput(tokenInput);
         if (!error) {
             document.getElementById("input.check-result").value = "(check ok)";
             document.getElementById("input.check-result").style["color"] = "";
@@ -705,7 +705,7 @@
 
     async function checkInputButton() {
         await checkInput();
-        [error, fixed] = assetsLib.checkTokenInput(tokenInput);
+        [error, fixed] = script.assets.checkTokenInput(tokenInput);
         if (!error) {
             error = "OK";
         }
