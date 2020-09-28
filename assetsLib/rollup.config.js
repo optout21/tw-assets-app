@@ -3,7 +3,7 @@ import pkg from '../package.json';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default {
-    input: './assetsLib.ts',
+    input: './src/assetsLib.ts',
     output: [
         {
             file: './dist/assetsLib.js',

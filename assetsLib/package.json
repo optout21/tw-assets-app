@@ -1,8 +1,8 @@
 {
-  "name": "assetslib",
-  "version": "0.1.0",
-  "description": "JS functions related to Trust Wallet Assets.",
-  "main": "assetsLib.ts",
+  "name": "tw-assets-lib",
+  "version": "0.2.0",
+  "description": "TS functions related to Trust Wallet Assets.",
+  "main": "src/assetsLib.ts",
   "scripts": {
     "build": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/trustwallet/tw-assets-managment.git"
   },
-  "author": "",
+  "author": "Trust Wallet",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/trustwallet/tw-assets-managment/issues"
