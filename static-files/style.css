@@ -1,10 +1,10 @@
 
 body {
   font-family: sans-serif;
-  background-color: lightgoldenrodyellow;
+  background-color: #e0e6ee;
 }
 h1 {
-  color: darkslategrey;
+  color: #38659e;
 }
 p {
 }
@@ -13,7 +13,7 @@ div {
 }
 button {
   color: white;
-  background-color: darkblue;
+  background-color: #38659e;
   font-size: 110%;
   border: none;
   padding: 8px 16px;
