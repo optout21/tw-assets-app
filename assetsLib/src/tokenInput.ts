@@ -56,7 +56,7 @@ export async function checkTokenInput(tokenInput: TokenInput): Promise<[string, 
         return ["Explorer cannot be empty", null];
     }
     if (!tokenInput.description) {
-        return ["Description cannot be empty", null];
+        return ["Short description cannot be empty", null];
     }
     if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
         return ["Logo image may not be missing", null];
