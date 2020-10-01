@@ -4,7 +4,8 @@ export {
     tokenInfoOfExistingToken,
     tokenInfoOfExistingTokenInRepo,
     chainFromType,
-    explorerUrl
+    explorerUrl,
+    checkTokenInfo
 } from "./tokenInfo";
 export {
     TokenInput,

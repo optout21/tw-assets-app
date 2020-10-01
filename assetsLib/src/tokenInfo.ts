@@ -1,3 +1,5 @@
+import { isEthereumAddress, toChecksum } from "./eth-address";
+
 /// Class holding info of a token
 export class TokenInfo {
     type: string = "";
@@ -95,6 +97,11 @@ export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract
         let resp = await fetch(ti.infoUrl);
         if (resp.status == 200) {
             ti.infoString = await resp.text();
+            try {
+                ti.info = JSON.parse(ti.infoString);
+            } catch (error) {
+                ti.info = {};
+            }
         }
     }
     return ti;
@@ -132,4 +139,89 @@ export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
         }
     });
     return ids;
+}
+
+// Check tokenInfo for validity: contract is OK, logo is OK, etc.
+// returns error or empty, all check results
+export async function checkTokenInfo(tokenInfo: TokenInfo): Promise<[string, string[]]> {
+    let oks: string[] = [];
+    if (!normalizeType(tokenInfo.type)) {
+        return [`Invalid token type ${tokenInfo.type}`, oks];
+    }
+    if (!tokenInfo.contract) {
+        return ["Contract/ID cannot be empty", oks];
+    }
+    if (!tokenInfo.logoStream && !tokenInfo.logoUrl) {
+        return ["Logo image may not be missing", oks];
+    }
+    let logoStreamSize = tokenInfo.logoStreamSize;
+    let logoStreamType = tokenInfo.logoStreamType;
+    if (!tokenInfo.logoStream) {
+        try {
+            const response = await fetch(tokenInfo.logoUrl);
+            if (response.status != 200) {
+                return [`Could not retrieve logo from url ${tokenInfo.logoUrl}, status ${status}`, oks];
+            }
+            logoStreamSize = (await response.arrayBuffer()).byteLength;
+            logoStreamType = response.headers.get('Content-Type');
+        } catch (error) {
+            return [`Could not retrieve logo from url ${tokenInfo.logoUrl}, error ${error}`, oks];
+        }
+    }
+    if (logoStreamType.toLowerCase() != "image/png") {
+        return [`Logo image must be PNG image (not ${logoStreamType})`, oks];
+    }
+    if (logoStreamSize > 100000) {
+        return [`Logo image too large, max 100 kB, current ${logoStreamSize / 1000} kB`, oks];
+    } else {
+        oks.push(`Logo image size is OK (${logoStreamSize / 1000} kB)`);
+    }
+    if (tokenInfo.type.toLowerCase() === "erc20") {
+        if (!isEthereumAddress(tokenInfo.contract)) {
+            return [`Contract is not a valid Ethereum address!`, oks];
+        }
+        const inChecksum = toChecksum(tokenInfo.contract);
+        if (inChecksum !== tokenInfo.contract) {
+            return [`Contract is not in checksum format, should be ${inChecksum}`, oks];
+        }
+        oks.push(`Contract is in checksum format`);
+    }
+    if (!tokenInfo.infoString || !tokenInfo.info) {
+        return ["Info.json must not be missing", oks];
+    }
+    if (!tokenInfo.info["website"]) {
+        return ["Website cannot be empty", oks];
+    }
+    if (!tokenInfo.info["explorer"]) {
+        return ["Explorer cannot be empty", oks];
+    }
+    if (!tokenInfo.info["short_description"]) {
+        return ["Short description cannot be empty", oks];
+    }
+    if (tokenInfo.info["explorer"]) {
+        const explorerUrl = tokenInfo.info["explorer"];
+        try {
+            const result = await fetch(explorerUrl);
+            if (result.status != 200) {
+                return [`ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}`, oks];
+            }
+        } catch (error) {
+            return [`ExplorerUrl does not exist, error ${error}, url ${explorerUrl}`, oks];
+        }
+        oks.push(`Explorer URL exists`);
+    }
+    if (tokenInfo.info["website"]) {
+        const website = tokenInfo.info["website"];
+        try {
+            const result = await fetch(website);
+            if (result.status != 200) {
+                return [`Website does not exist, status ${result.status}, url ${website}`, oks];
+            }
+        } catch (error) {
+            return [`Website does not exist, error ${error}, url ${website}`, oks];
+        }
+        oks.push(`Website exists`);
+    }
+
+    return ["", oks];
 }

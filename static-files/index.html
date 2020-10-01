@@ -723,7 +723,15 @@
         if (!error) {
             error = "OK";
         }
-        myAlert("Check result: " + error);
+    }
+
+    async function checkInfoButton() {
+        let [error, oks] = await script.assets.checkTokenInfo(tokenInfo);
+        if (error) {
+            myAlert("Check result: " + error);
+        } else {
+            myAlert("Check OK: \n" + oks.join("\n"));
+        }
     }
 
     async function start() {
@@ -947,6 +955,11 @@
                                 <td colspan="2">
                                     Links:
                                     <span id="info.links"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <button class="button" type="button" onclick="checkInfoButton()">Check</button>
                                 </td>
                             </tr>
                         </table>
