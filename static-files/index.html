@@ -73,13 +73,13 @@
     }
 
     async function clearInput() {
-        document.getElementById("contract").value = "";
-        document.getElementById("name").value = "";
+        document.getElementById("input.contract").value = "";
+        document.getElementById("input.name").value = "";
         document.getElementById("input.type").value = "ERC20";
         inputLogoSetStream(null, null, 0, null);
-        document.getElementById("website").value = "";
-        document.getElementById("short_description").value = "";
-        document.getElementById("explorer").value = "";
+        document.getElementById("input.website").value = "";
+        document.getElementById("input.short_description").value = "";
+        document.getElementById("input.explorer").value = "";
         await tokenInputChanged();
     }
 
@@ -512,12 +512,12 @@
     const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
 
     async function debugFillWithDummyData() {
-        document.getElementById("name").value = "LegumeToken";
+        document.getElementById("input.name").value = "LegumeToken";
         document.getElementById("input.type").value = "ERC20";
-        document.getElementById("contract").value = sampleEthContract;
-        document.getElementById("website").value = "https://en.wikipedia.org/wiki/Legume";
-        document.getElementById("short_description").value = "This is the best-tasting DeFi finance project.";
-        document.getElementById("explorer").value = `https://etherscan.io/token/${sampleEthContract}`;
+        document.getElementById("input.contract").value = sampleEthContract;
+        document.getElementById("input.website").value = "https://en.wikipedia.org/wiki/Legume";
+        document.getElementById("input.short_description").value = "This is the best-tasting DeFi finance project.";
+        document.getElementById("input.explorer").value = `https://etherscan.io/token/${sampleEthContract}`;
         await debugTestLogoGetNext();
         await tokenInputChanged();
     }
@@ -526,12 +526,12 @@
         if (!tokenInput) {
             tokenInput = new script.assets.TokenInput();
         }
-        tokenInput.name = document.getElementById("name").value;
+        tokenInput.name = document.getElementById("input.name").value;
         tokenInput.type = document.getElementById("input.type").value;
-        tokenInput.contract = document.getElementById("contract").value;
-        tokenInput.website = document.getElementById("website").value;
-        tokenInput.explorerUrl = document.getElementById("explorer").value;
-        tokenInput.description = document.getElementById("short_description").value;
+        tokenInput.contract = document.getElementById("input.contract").value;
+        tokenInput.website = document.getElementById("input.website").value;
+        tokenInput.explorerUrl = document.getElementById("input.explorer").value;
+        tokenInput.description = document.getElementById("input.short_description").value;
     }
 
     async function myAlert(message) {
@@ -772,7 +772,7 @@
                                 <tr>
                                     <td>Name:</td>
                                     <td>
-                                        <input class="input" id="name" placeholder="LegumeToken" size="20"
+                                        <input class="input" id="input.name" placeholder="LegumeToken" size="20"
                                             onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
                                     </td>
                                 </tr>
@@ -792,7 +792,7 @@
                                 <tr>
                                     <td>Contract/ID:</td>
                                     <td>
-                                        <input class="input" id="contract"
+                                        <input class="input" id="input.contract"
                                             placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
                                             onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
                                     </td>
@@ -814,21 +814,21 @@
                                 <tr>
                                     <td>Website:</td>
                                     <td>
-                                        <input class="input" id="website" placeholder="https://legume.fi" size="40"
+                                        <input class="input" id="input.website" placeholder="https://legume.fi" size="40"
                                             onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>Explorer:</td>
                                     <td>
-                                        <input class="input" id="explorer"
+                                        <input class="input" id="input.explorer"
                                             placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
                                             size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>Short description:</td>
-                                    <td><textarea class="input" id="short_description"
+                                    <td><textarea class="input" id="input.short_description"
                                             placeholder="This is the best-tasting DeFi finance project."
                                             style="width: 100%;" rows="2" onchange="tokenInputChanged()"
                                             oninput="tokenInputChanged()"></textarea>
