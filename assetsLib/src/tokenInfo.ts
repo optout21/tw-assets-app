@@ -123,7 +123,10 @@ export function tokenIdFromFile(filename: string): [string, string] {
             }
         }
     });
-    // matched none
+    // special for TRC10/20 -- both have same 'tron' folder
+    if (id[0] && id[0] == "trc20" && id[1].startsWith("10")) {
+        id[0] = "trc10";
+    }
     return id;
 }
 

@@ -352,7 +352,7 @@
             const contract = id[1];
             contractInfo["type"] = type;
             contractInfo["id"] = contract;
-            html += `<option value='${JSON.stringify(contractInfo, null, 2)}'>${type}: ${contract})</option>`;
+            html += `<option value='${JSON.stringify(contractInfo, null, 2)}'>${type}: ${contract}</option>`;
         });
         document.getElementById("pr-info.tokens").innerHTML = html;
         // load first
