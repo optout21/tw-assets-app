@@ -305,7 +305,16 @@
     async function loadOpenPrs() {
         const pulls = await getPulls(mainRepoOwner, mainRepoName);
         var html = "";
-        pulls.forEach(pr => html += `<option value='${JSON.stringify(pr, null, 2)}''>${pr.number} ${pr.title}</option>`);
+        pulls.forEach(pr => {
+            const prinfo = {
+                owner: pr.head.user.login,
+                repo: pr.head.repo.name,
+                branch: pr.head.ref,
+                number: pr.number,
+                title: pr.title
+            };
+            html += `<option value='${JSON.stringify(prinfo, null, 2)}''>${pr.number} ${pr.title}</option>`;
+        });
         document.getElementById("prs.result").innerHTML = html;
         document.getElementById("prs.count").innerHTML = `${pulls.length} PRs`;
     }
@@ -320,9 +329,6 @@
             return;
         }
         clearTokenInfo();
-        prInfo.owner = prInfo.head.user.login;
-        prInfo.repo = prInfo.head.repo.name;
-        prInfo.branch = prInfo.head.ref;
         console.log(`PR ${prInfo.number}: ${prInfo.owner}/${prInfo.repo}/${prInfo.branch}`);
 
         document.getElementById("pr-info.title").innerHTML = `<a href="${gitHub}/${mainRepoFullName}/pull/${prInfo.number}" target="_blank" rel="noopener noreferrer"><strong>PR #${prInfo.number}</strong></a>: ${prInfo.title}`;
