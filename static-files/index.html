@@ -534,6 +534,18 @@
         tokenInput.description = document.getElementById("input.short_description").value;
     }
 
+    function loadTokenInput() {
+        if (!tokenInput) {
+            tokenInput = new script.assets.TokenInput();
+        }
+        document.getElementById("input.name").value = tokenInput.name;
+        document.getElementById("input.type").value = tokenInput.type;
+        document.getElementById("input.contract").value = tokenInput.contract;
+        document.getElementById("input.website").value = tokenInput.website;
+        document.getElementById("input.explorer").value = tokenInput.explorerUrl;
+        document.getElementById("input.short_description").value = tokenInput.description;
+    }
+
     async function myAlert(message) {
         addLog(message);
         alert(message);
@@ -721,8 +733,18 @@
         await checkInput();
         [error, fixed] = await script.assets.checkTokenInput(tokenInput);
         if (!error) {
-            error = "OK";
+            myAlert("Check result: OK");
+            return;
         }
+        if (!fixed) {
+            myAlert("Check result: " + error);
+            return;
+        }
+        // fix
+        tokenInput = fixed;
+        loadTokenInput();
+        await tokenInputChanged();
+        myAlert("Check result: Fixed! \n " + error);
     }
 
     async function checkInfoButton() {
@@ -853,7 +875,7 @@
                                     <td>
                                         <button class="button" type="button" onclick="createBranchAndPull()">Create
                                             PR</button>
-                                        <button class="button" type="button" onclick="checkInputButton()">Check</button>
+                                        <button class="button" type="button" onclick="checkInputButton()">Check/Fix</button>
                                         <button class="button" type="button" onclick="clearInput()">Clear</button>
                                     </td>
                                 </tr>

@@ -35,6 +35,20 @@ export class TokenInput {
         tokenInfo.infoString = JSON.stringify(tokenInfo.info, null, 4);
         return tokenInfo;
     }
+
+    clone(): TokenInput {
+        let ti2 = new TokenInput();
+        ti2.name = this.name;
+        ti2.type = this.type;
+        ti2.contract = this.contract;
+        ti2.logoStream = this.logoStream;
+        ti2.logoStreamSize = this.logoStreamSize;
+        ti2.logoStreamType = this.logoStreamType;
+        ti2.website = this.website;
+        ti2.explorerUrl = this.explorerUrl;
+        ti2.description = this.description;
+        return ti2;
+    }
 }
 
 // Check tokenInput for validity: everything is filled, logo is OK, etc.
@@ -73,7 +87,7 @@ export async function checkTokenInput(tokenInput: TokenInput): Promise<[string, 
         }
         const inChecksum = toChecksum(tokenInput.contract);
         if (inChecksum !== tokenInput.contract) {
-            let fixed = tokenInput;
+            let fixed = tokenInput.clone();
             fixed.contract = inChecksum;
             return [`Contract is not in checksum format, should be ${inChecksum}`, fixed];
         }
