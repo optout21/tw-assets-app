@@ -144,9 +144,13 @@ export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
     return ids;
 }
 
+interface ImageDiimensionsCalculator {
+    get(imageUrl: string, imageStream: string): {x: number, y: number};
+}
+
 // Check tokenInfo for validity: contract is OK, logo is OK, etc.
 // returns error or empty, all check results
-export async function checkTokenInfo(tokenInfo: TokenInfo): Promise<[string, string[]]> {
+export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDiimensionsCalculator): Promise<[string, string[]]> {
     let oks: string[] = [];
     if (!normalizeType(tokenInfo.type)) {
         return [`Invalid token type ${tokenInfo.type}`, oks];
@@ -179,6 +183,22 @@ export async function checkTokenInfo(tokenInfo: TokenInfo): Promise<[string, str
     } else {
         oks.push(`Logo image size is OK (${logoStreamSize / 1000} kB)`);
     }
+
+    try {
+        const logoDimension = imgDimsCalc.get(tokenInfo.logoUrl, tokenInfo.logoStream);
+        if (logoDimension.x == 0 && logoDimension.y == 0) {
+            return [`Could not retrieve logo dimensions`, oks];
+        } else if (logoDimension.x > 512 || logoDimension.y > 512) {
+            return [`Logo dimensions too large ${logoDimension.x}x${logoDimension.y}`, oks];
+        } else if (logoDimension.x < 64 || logoDimension.y < 64) {
+            return [`Logo dimensions too small ${logoDimension.x}x${logoDimension.y}`, oks];
+        } else {
+            oks.push(`Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`);
+        }
+    } catch (error) {
+        return [`Could not retrieve logo dimensions`, oks];
+    }
+    
     if (tokenInfo.type.toLowerCase() === "erc20") {
         if (!isEthereumAddress(tokenInfo.contract)) {
             return [`Contract is not a valid Ethereum address!`, oks];

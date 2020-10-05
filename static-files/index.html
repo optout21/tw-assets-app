@@ -4,13 +4,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<script type="module">
-    //import { request } from "https://cdn.skypack.dev/@octokit/request";
-    //import * as assetsLib from "./assetsLib.es.js";
-    //window.request = request;
-    //window.assetsLib = assetsLib;
-</script>
-
 <script type="module" src="bundle.js"></script>
 
 <script>
@@ -748,11 +741,27 @@
     }
 
     async function checkInfoButton() {
-        let [error, oks] = await script.assets.checkTokenInfo(tokenInfo);
+        let [error, oks] = await script.assets.checkTokenInfo(tokenInfo, {get: getImageDimension});
         if (error) {
             myAlert("Check result: " + error);
         } else {
             myAlert("Check OK: \n" + oks.join("\n"));
+        }
+    }
+
+    // Retrieve the size of an image (url or stream) but placing in a hidden img and retrieving size
+    function getImageDimension(url, stream = null) {
+        try {
+            const img = document.getElementById("image-placeholder-for-size-computation");
+            img.src = "";
+            if (stream) {
+                img.src = "data:image/gif;base64," + stream;
+            } else {
+                img.src = url;
+            }
+            return {x: img.naturalWidth, y: img.naturalHeight};
+        } catch (error) {
+            return {x: 0, y: 0}
         }
     }
 
@@ -986,6 +995,9 @@
                             </tr>
                         </table>
                     </div>
+                </td>
+                <td hidden="true">
+                    <img id="image-placeholder-for-size-computation" src="favicon.ico" />
                 </td>
             </tr>
             <table>
