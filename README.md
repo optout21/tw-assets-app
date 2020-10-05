@@ -4,7 +4,7 @@ Github App to help adding new tokens and managing the Trust Wallet assets reposi
 ## Building
 
 ```shell
-npm install && cd assetsLib && npm install
+npm install && cd assetsLib && npm install && cd ..
 ```
 
 ```shell

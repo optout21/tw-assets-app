@@ -741,11 +741,13 @@
     }
 
     async function checkInfoButton() {
-        let [error, oks] = await script.assets.checkTokenInfo(tokenInfo, {get: getImageDimension});
-        if (error) {
-            myAlert("Check result: " + error);
+        let [resnum, resmsg] = await script.assets.checkTokenInfo(tokenInfo, {get: getImageDimension});
+        if (resnum >= 2) {
+            myAlert("Check result: ERROR \n" + resmsg);
+        } else if (resnum >= 1) {
+            myAlert("Check result: Warning \n" + resmsg);
         } else {
-            myAlert("Check OK: \n" + oks.join("\n"));
+            myAlert("Check OK: \n" + resmsg);
         }
     }
 

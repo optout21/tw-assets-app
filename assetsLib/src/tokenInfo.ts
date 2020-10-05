@@ -149,17 +149,99 @@ export interface ImageDimensionsCalculator {
 }
 
 // Check tokenInfo for validity: contract is OK, logo is OK, etc.
-// returns error or empty, all check results
-export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<[string, string[]]> {
-    let oks: string[] = [];
+// returns:
+// - result: 0 for all OK, 1 for at least on warning, 2 for at least on error
+// - a multi-line string with the detailed results
+export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string]> {
+    let res: {res: number, msg: string}[] = [];
+
     if (!normalizeType(tokenInfo.type)) {
-        return [`Invalid token type ${tokenInfo.type}`, oks];
+        res.push({res: 2, msg: `Invalid token type ${tokenInfo.type}`});
+    } else {
+        res.push({res: 0, msg: `Token type OK (${tokenInfo.type})`});
     }
+
+    res.push(checkTokenInfoContract(tokenInfo));
+
+    (await checkTokenInfoLogo(tokenInfo, imgDimsCalc)).forEach(r => res.push(r));
+    
+    if (!tokenInfo.info) {
+        res.push({res: 2, msg: "Info.json must not be missing"});
+    } else {
+        if (!tokenInfo.info["website"]) {
+            res.push({res: 2, msg: "Website cannot be empty"});
+        } else {
+            const website = tokenInfo.info["website"];
+            try {
+                const result = await fetch(website);
+                if (result.status != 200) {
+                    res.push({res: 2, msg: `Website does not exist, status ${result.status}, url ${website}`});
+                }
+                res.push({res: 0, msg: `Website OK`});
+            } catch (error) {
+                res.push({res: 2, msg: `Website does not exist, error ${error}, url ${website}`});
+            }
+        }
+
+        if (!tokenInfo.info["explorer"]) {
+            res.push({res: 2, msg: "Explorer cannot be empty"});
+        } else {
+            const explorerUrl = tokenInfo.info["explorer"];
+            try {
+                const result = await fetch(explorerUrl);
+                if (result.status != 200) {
+                    res.push({res: 2, msg: `ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}`});
+                }
+                res.push({res: 0, msg: `Explorer URL OK`});
+            } catch (error) {
+                res.push({res: 2, msg: `ExplorerUrl does not exist, error ${error}, url ${explorerUrl}`});
+            }
+        }
+
+        if (!tokenInfo.info["short_description"]) {
+            res.push({res: 2, msg: "Short description cannot be empty"});
+        } else {
+            res.push({res: 0, msg: "Description OK"});
+        }
+    }
+
+    // Aggregate results: max and string
+    let maxres = 0;
+    let msg = "";
+    res.forEach(r => {
+        maxres = Math.max(r.res, maxres);
+        switch (r.res) {
+            case 2: msg += "❌"; break;
+            case 1: msg += "!"; break;
+            default: msg += "✓"; break;
+        }
+        msg += "  " + r.msg + "\n";
+    });
+
+    return [maxres, msg];
+}
+
+function checkTokenInfoContract(tokenInfo: TokenInfo): {res: number, msg: string} {
     if (!tokenInfo.contract) {
-        return ["Contract/ID cannot be empty", oks];
+        return {res: 2, msg: "Contract/ID cannot be empty"};
     }
+    if (tokenInfo.type.toLowerCase() === "erc20") {
+        if (!isEthereumAddress(tokenInfo.contract)) {
+            return {res: 2, msg: `Contract is not a valid Ethereum address!`};
+        }
+        const inChecksum = toChecksum(tokenInfo.contract);
+        if (inChecksum !== tokenInfo.contract) {
+            return {res: 2, msg: `Contract is not in checksum format, should be ${inChecksum}`};
+        }
+    }
+    return {res: 0, msg: `Contract/ID is OK`};
+}
+
+async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<{res: number, msg: string}[]> {
+    let res: {res: number, msg: string}[] = [];
+
     if (!tokenInfo.logoStream && !tokenInfo.logoUrl) {
-        return ["Logo image may not be missing", oks];
+        return [{res: 2, msg: "Logo image may not be missing"}];
     }
     let logoStreamSize = tokenInfo.logoStreamSize;
     let logoStreamType = tokenInfo.logoStreamType;
@@ -167,84 +249,38 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
         try {
             const response = await fetch(tokenInfo.logoUrl);
             if (response.status != 200) {
-                return [`Could not retrieve logo from url ${tokenInfo.logoUrl}, status ${status}`, oks];
+                return [{res: 2, msg: `Could not retrieve logo from url ${tokenInfo.logoUrl}, status ${status}`}];
             }
             logoStreamSize = (await response.arrayBuffer()).byteLength;
             logoStreamType = response.headers.get('Content-Type');
         } catch (error) {
-            return [`Could not retrieve logo from url ${tokenInfo.logoUrl}, error ${error}`, oks];
+            return [{res: 2, msg: `Could not retrieve logo from url ${tokenInfo.logoUrl}, error ${error}`}];
         }
     }
     if (logoStreamType.toLowerCase() != "image/png") {
-        return [`Logo image must be PNG image (not ${logoStreamType})`, oks];
+        return [{res: 2, msg: `Logo image must be PNG image (not ${logoStreamType})`}];
     }
+    res.push({res: 0, msg: `Logo image type is OK (${logoStreamType})`});
+
     if (logoStreamSize > 100000) {
-        return [`Logo image too large, max 100 kB, current ${logoStreamSize / 1000} kB`, oks];
+        res.push({res: 2, msg: `Logo image too large, max 100 kB, current ${logoStreamSize / 1000} kB`});
     } else {
-        oks.push(`Logo image size is OK (${logoStreamSize / 1000} kB)`);
+        res.push({res: 0, msg: `Logo image size is OK (${logoStreamSize / 1000} kB)`});
     }
 
     try {
         const logoDimension = imgDimsCalc.get(tokenInfo.logoUrl, tokenInfo.logoStream);
         if (logoDimension.x == 0 && logoDimension.y == 0) {
-            return [`Could not retrieve logo dimensions`, oks];
+            res.push({res: 2, msg: `Could not retrieve logo dimensions`});
         } else if (logoDimension.x > 512 || logoDimension.y > 512) {
-            return [`Logo dimensions too large ${logoDimension.x}x${logoDimension.y}`, oks];
+            res.push({res: 2, msg: `Logo dimensions too large ${logoDimension.x}x${logoDimension.y}`});
         } else if (logoDimension.x < 64 || logoDimension.y < 64) {
-            return [`Logo dimensions too small ${logoDimension.x}x${logoDimension.y}`, oks];
+            res.push({res: 2, msg: `Logo dimensions too small ${logoDimension.x}x${logoDimension.y}`});
         } else {
-            oks.push(`Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`);
+            res.push({res: 0, msg: `Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`});
         }
     } catch (error) {
-        return [`Could not retrieve logo dimensions`, oks];
+        res.push({res: 2, msg: `Could not retrieve logo dimensions`});
     }
-    
-    if (tokenInfo.type.toLowerCase() === "erc20") {
-        if (!isEthereumAddress(tokenInfo.contract)) {
-            return [`Contract is not a valid Ethereum address!`, oks];
-        }
-        const inChecksum = toChecksum(tokenInfo.contract);
-        if (inChecksum !== tokenInfo.contract) {
-            return [`Contract is not in checksum format, should be ${inChecksum}`, oks];
-        }
-        oks.push(`Contract is in checksum format`);
-    }
-    if (!tokenInfo.infoString || !tokenInfo.info) {
-        return ["Info.json must not be missing", oks];
-    }
-    if (!tokenInfo.info["website"]) {
-        return ["Website cannot be empty", oks];
-    }
-    if (!tokenInfo.info["explorer"]) {
-        return ["Explorer cannot be empty", oks];
-    }
-    if (!tokenInfo.info["short_description"]) {
-        return ["Short description cannot be empty", oks];
-    }
-    if (tokenInfo.info["explorer"]) {
-        const explorerUrl = tokenInfo.info["explorer"];
-        try {
-            const result = await fetch(explorerUrl);
-            if (result.status != 200) {
-                return [`ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}`, oks];
-            }
-        } catch (error) {
-            return [`ExplorerUrl does not exist, error ${error}, url ${explorerUrl}`, oks];
-        }
-        oks.push(`Explorer URL exists`);
-    }
-    if (tokenInfo.info["website"]) {
-        const website = tokenInfo.info["website"];
-        try {
-            const result = await fetch(website);
-            if (result.status != 200) {
-                return [`Website does not exist, status ${result.status}, url ${website}`, oks];
-            }
-        } catch (error) {
-            return [`Website does not exist, error ${error}, url ${website}`, oks];
-        }
-        oks.push(`Website exists`);
-    }
-
-    return ["", oks];
+    return res;
 }
