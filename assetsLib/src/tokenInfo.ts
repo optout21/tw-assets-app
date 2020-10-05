@@ -145,7 +145,7 @@ export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
 }
 
 export interface ImageDimensionsCalculator {
-    get(imageUrl: string, imageStream: string): {x: number, y: number};
+    get(imageUrl: string, imageStream: string): Promise<{x: number, y: number}>;
 }
 
 // Check tokenInfo for validity: contract is OK, logo is OK, etc.
@@ -155,7 +155,7 @@ export interface ImageDimensionsCalculator {
 export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string]> {
     let res: {res: number, msg: string}[] = [];
 
-    if (!normalizeType(tokenInfo.type)) {
+    if (!tokenInfo.type || !normalizeType(tokenInfo.type)) {
         res.push({res: 2, msg: `Invalid token type ${tokenInfo.type}`});
     } else {
         res.push({res: 0, msg: `Token type OK (${tokenInfo.type})`});
@@ -176,8 +176,9 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
                 const result = await fetch(website);
                 if (result.status != 200) {
                     res.push({res: 2, msg: `Website does not exist, status ${result.status}, url ${website}`});
+                } else {
+                    res.push({res: 0, msg: `Website OK`});
                 }
-                res.push({res: 0, msg: `Website OK`});
             } catch (error) {
                 res.push({res: 2, msg: `Website does not exist, error ${error}, url ${website}`});
             }
@@ -191,8 +192,9 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
                 const result = await fetch(explorerUrl);
                 if (result.status != 200) {
                     res.push({res: 2, msg: `ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}`});
+                } else {
+                    res.push({res: 0, msg: `Explorer URL OK`});
                 }
-                res.push({res: 0, msg: `Explorer URL OK`});
             } catch (error) {
                 res.push({res: 2, msg: `ExplorerUrl does not exist, error ${error}, url ${explorerUrl}`});
             }
@@ -205,19 +207,18 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
         }
     }
 
-    // Aggregate results: max and string
+    return AggregateCheckResults(res);
+}
+
+// Aggregate results: max and string
+export function AggregateCheckResults(res: {res: number, msg: string}[]): [number, string] {
     let maxres = 0;
     let msg = "";
-    res.forEach(r => {
-        maxres = Math.max(r.res, maxres);
-        switch (r.res) {
-            case 2: msg += "❌"; break;
-            case 1: msg += "!"; break;
-            default: msg += "✓"; break;
-        }
-        msg += "  " + r.msg + "\n";
-    });
-
+    res.forEach(r => maxres = Math.max(r.res, maxres));
+    // Error first, warnings, OKs
+    res.forEach(r => {if (r.res >= 2) { msg += "❌  " + r.msg + "\n"; }});
+    res.forEach(r => {if (r.res == 1) { msg += "!  " + r.msg + "\n"; }});
+    res.forEach(r => {if (r.res == 0) { msg += "✓  " + r.msg + "\n"; }});
     return [maxres, msg];
 }
 
@@ -269,7 +270,7 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
     }
 
     try {
-        const logoDimension = imgDimsCalc.get(tokenInfo.logoUrl, tokenInfo.logoStream);
+        const logoDimension = await imgDimsCalc.get(tokenInfo.logoUrl, tokenInfo.logoStream);
         if (logoDimension.x == 0 && logoDimension.y == 0) {
             res.push({res: 2, msg: `Could not retrieve logo dimensions`});
         } else if (logoDimension.x > 512 || logoDimension.y > 512) {
@@ -280,7 +281,8 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
             res.push({res: 0, msg: `Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`});
         }
     } catch (error) {
-        res.push({res: 2, msg: `Could not retrieve logo dimensions`});
+        res.push({res: 2, msg: `Could not retrieve logo dimensions (${error})`});
     }
+
     return res;
 }
