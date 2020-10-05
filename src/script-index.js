@@ -1,6 +1,6 @@
 // Collection of dependency libs, to be bundled
 
-import * as assetsLib from "../node_modules/tw-assets-lib/dist/assetsLib";
+import * as assetsLib from "../assetsLib/dist/assetsLib";
 const octokit = require("@octokit/request");
 
 export const assets = assetsLib;
