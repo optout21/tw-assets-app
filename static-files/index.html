@@ -307,8 +307,8 @@
         var html = "";
         pulls.forEach(pr => {
             const prinfo = {
-                owner: pr.head.user.login,
-                repo: pr.head.repo.name,
+                owner: pr.head.user ? pr.head.user.login : '',
+                repo: pr.head.repo ? pr.head.repo.name : '',
                 branch: pr.head.ref,
                 number: pr.number,
                 title: pr.title
