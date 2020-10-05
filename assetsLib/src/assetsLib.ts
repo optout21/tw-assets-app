@@ -5,7 +5,8 @@ export {
     tokenInfoOfExistingTokenInRepo,
     chainFromType,
     explorerUrl,
-    checkTokenInfo
+    checkTokenInfo,
+    ImageDimensionsCalculator
 } from "./tokenInfo";
 export {
     TokenInput,

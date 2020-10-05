@@ -1,4 +1,4 @@
-import { TokenInfo, normalizeType } from "./tokenInfo";
+import { TokenInfo, normalizeType, ImageDimensionsCalculator } from "./tokenInfo";
 import { isEthereumAddress, toChecksum } from "./eth-address";
 //import * as image_size from "image-size";
 
@@ -53,7 +53,7 @@ export class TokenInput {
 
 // Check tokenInput for validity: everything is filled, logo is OK, etc.
 // returns error if there is, fixed version if can be auto-fixed
-export async function checkTokenInput(tokenInput: TokenInput): Promise<[string, TokenInput | null]> {
+export async function checkTokenInput(tokenInput: TokenInput, imgDimsCalc: ImageDimensionsCalculator): Promise<[string, TokenInput | null]> {
     if (!tokenInput.name) {
         return ["Name cannot be empty", null];
     }
@@ -81,6 +81,22 @@ export async function checkTokenInput(tokenInput: TokenInput): Promise<[string, 
     if (tokenInput.logoStreamSize > 100000) {
         return [`Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`, null];
     }
+
+    try {
+        const logoDimension = imgDimsCalc.get(null, tokenInput.logoStream);
+        if (logoDimension.x == 0 && logoDimension.y == 0) {
+            return [`Could not retrieve logo dimensions`, null];
+        } else if (logoDimension.x > 512 || logoDimension.y > 512) {
+            return [`Logo dimensions too large ${logoDimension.x}x${logoDimension.y}`, null];
+        } else if (logoDimension.x < 64 || logoDimension.y < 64) {
+            return [`Logo dimensions too small ${logoDimension.x}x${logoDimension.y}`, null];
+        } else {
+            //oks.push(`Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`);
+        }
+    } catch (error) {
+        return [`Could not retrieve logo dimensions`, null];
+    }
+
     if (tokenInput.type.toLowerCase() === "erc20") {
         if (!isEthereumAddress(tokenInput.contract)) {
             return [`Contract is not a valid Ethereum address!`, null];

@@ -712,7 +712,7 @@
             document.getElementById("explorer").value = explorer;
         }
 
-        const [error, fixed] = await script.assets.checkTokenInput(tokenInput);
+        const [error, fixed] = await script.assets.checkTokenInput(tokenInput, {get: getImageDimension});
         if (!error) {
             document.getElementById("input.check-result").value = "(check ok)";
             document.getElementById("input.check-result").style["color"] = "";
@@ -724,7 +724,7 @@
 
     async function checkInputButton() {
         await checkInput();
-        [error, fixed] = await script.assets.checkTokenInput(tokenInput);
+        [error, fixed] = await script.assets.checkTokenInput(tokenInput, {get: getImageDimension});
         if (!error) {
             myAlert("Check result: OK");
             return;

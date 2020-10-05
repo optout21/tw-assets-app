@@ -144,13 +144,13 @@ export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
     return ids;
 }
 
-interface ImageDiimensionsCalculator {
+export interface ImageDimensionsCalculator {
     get(imageUrl: string, imageStream: string): {x: number, y: number};
 }
 
 // Check tokenInfo for validity: contract is OK, logo is OK, etc.
 // returns error or empty, all check results
-export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDiimensionsCalculator): Promise<[string, string[]]> {
+export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<[string, string[]]> {
     let oks: string[] = [];
     if (!normalizeType(tokenInfo.type)) {
         return [`Invalid token type ${tokenInfo.type}`, oks];
