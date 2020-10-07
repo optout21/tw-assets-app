@@ -733,6 +733,7 @@
 
     async function checkInputButton() {
         await checkInput();
+        addLog("starting TokenInput check...");
         const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, {get: getImageDimension});
         if (resnum == 0) {
             myAlert("Check result: OK\n" + resmsg);
@@ -755,6 +756,7 @@
     }
 
     async function checkInfoButton() {
+        addLog("starting TokenInfo check...");
         let [resnum, resmsg] = await script.assets.checkTokenInfo(tokenInfo, {get: getImageDimension});
         if (resnum >= 2) {
             myAlert("Check result: ERROR \n" + resmsg);
