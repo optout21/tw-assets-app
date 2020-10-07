@@ -219,6 +219,12 @@
         } else {
             links += "(explorer) ";
         }
+        const website = tokenInfo.info["website"];
+        if (website) {
+            links += `<a href="${website}" target="_blank">Website</a> `;
+        } else {
+            links += "(website) ";
+        }
         document.getElementById("info.links").innerHTML = links;
     }
 
@@ -814,7 +820,7 @@
                 <td>
                     <div id="tab-add">
                         <div>
-                            <h3>Add ERC20 Token</h3>
+                            <h3>Add Token</h3>
                             Please fill in the token/project details
                         </div>
                         <div>

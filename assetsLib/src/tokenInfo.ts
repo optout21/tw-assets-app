@@ -226,7 +226,7 @@ function checkTokenInfoContract(tokenInfo: TokenInfo): {res: number, msg: string
     if (!tokenInfo.contract) {
         return {res: 2, msg: "Contract/ID cannot be empty"};
     }
-    if (tokenInfo.type.toLowerCase() === "erc20") {
+    if (tokenInfo.type.toLowerCase() === "erc20" || tokenInfo.type.toLowerCase() === "bep20") {
         if (!isEthereumAddress(tokenInfo.contract)) {
             return {res: 2, msg: `Contract is not a valid Ethereum address!`};
         }

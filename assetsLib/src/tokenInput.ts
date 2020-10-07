@@ -135,7 +135,7 @@ function checkTokenInputContract(tokenInput: TokenInput): [{res: number, msg: st
     if (!tokenInput.contract) {
         return [{res: 2, msg: "Contract/ID cannot be empty"}, null];
     }
-    if (tokenInput.type.toLowerCase() === "erc20") {
+    if (tokenInput.type.toLowerCase() === "erc20" || tokenInput.type.toLowerCase() === "bep20") {
         if (!isEthereumAddress(tokenInput.contract)) {
             return [{res: 2, msg: `Contract is not a valid Ethereum address!`}, null];
         }
