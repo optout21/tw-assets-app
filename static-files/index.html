@@ -395,8 +395,9 @@
         return result.data.ref;
     }
 
-    async function createPull(branchName, tokenName, debugPrTargetFork) {
-        const title = `Add ${tokenName}`;
+    async function createPull(branchName, tokenName, tokenType, debugPrTargetFork) {
+        const title = `Add ${tokenName} (${tokenType})`;
+        const text = `Adding info for ${tokenType} token '${tokenName}'.\n\n${prBodyFooter}`;
         var owner1 = mainRepoOwner;
         var repo1 = mainRepoName;
         if (debugPrTargetFork) {
@@ -410,7 +411,7 @@
             title: title,
             head: loginname + ":" + branchName,
             base: "master",
-            body: `Info for token ${tokenName} is added.` + "\n\n" + prBodyFooter,
+            body: text,
             maintainer_can_modify: true,
             draft: false
         });
@@ -624,7 +625,7 @@
         }
 
         const debugPrTargetFork = !document.getElementsByName("debug-pr-target")[0].checked;
-        const pullNumber = await createPull(branchName, tokenInput.name, debugPrTargetFork);  // true for debug
+        const pullNumber = await createPull(branchName, tokenInput.name, tokenInput.type, debugPrTargetFork);  // true for debug
         if (!pullNumber) {
             createPullError(`Could not create PR`);
             return;
