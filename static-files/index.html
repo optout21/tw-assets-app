@@ -719,7 +719,7 @@
             document.getElementById("input.explorer").value = explorer;
         }
 
-        const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, {get: getImageDimension});
+        const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, { get: getImageDimension });
         if (resnum >= 2) {
             document.getElementById("input.check-result").value = "ERROR:\n" + resmsg;
             document.getElementById("input.check-result").style["color"] = "red";
@@ -735,7 +735,7 @@
     async function checkInputButton() {
         await checkInput();
         addLog("starting TokenInput check...");
-        const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, {get: getImageDimension});
+        const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, { get: getImageDimension });
         if (resnum == 0) {
             myAlert("Check result: OK\n" + resmsg);
             return;
@@ -758,7 +758,7 @@
 
     async function checkInfoButton() {
         addLog("starting TokenInfo check...");
-        let [resnum, resmsg] = await script.assets.checkTokenInfo(tokenInfo, {get: getImageDimension});
+        let [resnum, resmsg] = await script.assets.checkTokenInfo(tokenInfo, { get: getImageDimension });
         if (resnum >= 2) {
             myAlert("Check result: ERROR \n" + resmsg);
         } else if (resnum >= 1) {
@@ -778,10 +778,10 @@
             } else {
                 img.src = url;
             }
-            return {x: img.naturalWidth, y: img.naturalHeight};
+            return { x: img.naturalWidth, y: img.naturalHeight };
         } catch (error) {
             console.log("getImageDimension exception", error);
-            return {x: 0, y: 0}
+            return { x: 0, y: 0 }
         }
     }
 
@@ -804,20 +804,17 @@
 </script>
 
 <body onload="start()">
-    <div>
-        <span>
-            <a>TW Assets App</a>
-            <img src="favicon.ico" height="20" />
+    <div id="header">
+        <span id="menu">
+            <a href="#" onclick="tabSelect('add')">Add New Token</a>
+            <a href="#" onclick="tabSelect('prs')">Pull Requests</a>
+            <a href="#" onclick="tabSelect('search')">Token Search</a>
         </span>
-        <span id="user">-</span>
-        <hr />
+        <span id="menu-right">
+            <span id="user">-</span>
+        </span>
     </div>
-    <div>
-        <a href="#" onclick="tabSelect('add')">Add New Token</a> |
-        <a href="#" onclick="tabSelect('prs')">Pull Requests</a> |
-        <a href="#" onclick="tabSelect('search')">Token Search</a>
-    </div>
-    <div>
+    <div id="main">
         <table>
             <tr>
                 <td>
@@ -873,8 +870,8 @@
                                 <tr>
                                     <td>Website:</td>
                                     <td>
-                                        <input class="input" id="input.website" placeholder="https://legume.fi" size="40"
-                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                        <input class="input" id="input.website" placeholder="https://legume.fi"
+                                            size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
                                     </td>
                                 </tr>
                                 <tr>
@@ -904,7 +901,8 @@
                                     <td>
                                         <button class="button" type="button" onclick="createBranchAndPull()">Create
                                             PR</button>
-                                        <button class="button" type="button" onclick="checkInputButton()">Check/Fix</button>
+                                        <button class="button" type="button"
+                                            onclick="checkInputButton()">Check/Fix</button>
                                         <button class="button" type="button" onclick="clearInput()">Clear</button>
                                     </td>
                                 </tr>
@@ -1020,10 +1018,15 @@
                     <img id="image-placeholder-for-size-computation" src="favicon.ico" />
                 </td>
             </tr>
-            <table>
+        </table>
+    </div>
+    <div id="footer">
+        <span>
+            <img src="favicon.ico" height="20" />
+            <a>Trust Wallet Assets App</a>
+        </span>
     </div>
     <div>
-        <hr />
         <div>
             <h3>Debug Section</h3>
         </div>

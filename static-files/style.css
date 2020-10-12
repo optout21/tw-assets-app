@@ -1,15 +1,10 @@
 
 body {
   font-family: sans-serif;
-  background-color: #e0e6ee;
+  background-color: white;
 }
 h1 {
   color: #38659e;
-}
-p {
-}
-div {
-  margin: 2px 2px; 
 }
 button {
   color: white;
@@ -35,4 +30,21 @@ textarea {
   color: gray;
   background-color: lightgoldenrodyellow;
   font-size: 80%;
+}
+#main {
+  background-color: #e0e6ee;
+}
+#header a {
+  text-decoration: none;
+  color: #38659e;
+}
+#menu a {
+  padding: 8px;
+}
+#menu a:hover {
+  background-color: #e0e6ee;
+}
+#menu-right {
+  text-align: right;
+  float: right;
 }
