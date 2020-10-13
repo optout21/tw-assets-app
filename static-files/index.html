@@ -646,25 +646,6 @@
         return urlParams.get("token");
     }
 
-    async function tabSelect(tab) {
-        document.getElementById("tab-add").hidden = true;
-        document.getElementById("tab-prs").hidden = true;
-        document.getElementById("tab-search").hidden = true;
-        switch (tab) {
-            case "add":
-            default:
-                document.getElementById("tab-add").hidden = false;
-                break;
-            case "search":
-                document.getElementById("tab-search").hidden = false;
-                break;
-            case "prs":
-                document.getElementById("tab-prs").hidden = false;
-                await loadOpenPrs();
-                break;
-        }
-    }
-
     async function searchButton() {
         const query = document.getElementById("search.input").value;
         if (query.length < 2) {
@@ -793,7 +774,6 @@
     }
 
     async function start() {
-        tabSelect("add");
         await clearUser();
         refreshUser();
         token = getTokenQP();
@@ -811,6 +791,7 @@
         var app = new Vue({
             el: '#app',
             data: {
+                activeTab: 'tab-add'
             },
             methods: {
             }
@@ -822,9 +803,9 @@
     <span id="app">
         <div id="header">
             <span id="menu">
-                <a href="#" onclick="tabSelect('add')">Add New Token</a>
-                <a href="#" onclick="tabSelect('prs')">Pull Requests</a>
-                <a href="#" onclick="tabSelect('search')">Token Search</a>
+                <a v-on:click="activeTab = 'tab-add'">Add New Token</a>
+                <a v-on:click="activeTab = 'tab-prs'; loadOpenPrs();">Pull Requests</a>
+                <a v-on:click="activeTab = 'tab-search'">Token Search</a>
             </span>
             <span id="menu-right">
                 <span id="user">-</span>
@@ -834,7 +815,7 @@
             <table>
                 <tr>
                     <td>
-                        <div id="tab-add">
+                        <div class="tab-pane" v-show="activeTab == 'tab-add'">
                             <div>
                                 <h3>Add Token</h3>
                                 Please fill in the token/project details
@@ -930,7 +911,7 @@
                         </div>
                     </td>
                     <td>
-                        <div id="tab-prs" hidden="true">
+                        <div class="tab-pane" v-show="activeTab == 'tab-prs'" >
                             <div>
                                 <h3>Pull Requests</h3>
                             </div>
@@ -959,8 +940,8 @@
                         </div>
                     </td>
                     <td>
-                        <div id="tab-search" hidden="true">
-                            <div>
+                        <div class="tab-pane" v-show="activeTab == 'tab-search'">
+                                <div>
                                 <h3>Token Search</h3>
                             </div>
                             <div>
