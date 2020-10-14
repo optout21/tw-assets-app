@@ -2,8 +2,15 @@
 
 <head>
     <link rel="stylesheet" href="style.css">
+
+    <!-- Vue.js  -->
+    <!-- Development version, includes helpful console warnings -->
+    <!-- script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script -->
+    <!-- Production version, optimized for size and speed -->
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 </head>
 
+<!-- Own library -->
 <script type="module" src="bundle.js"></script>
 
 <script>
@@ -639,25 +646,6 @@
         return urlParams.get("token");
     }
 
-    async function tabSelect(tab) {
-        document.getElementById("tab-add").hidden = true;
-        document.getElementById("tab-prs").hidden = true;
-        document.getElementById("tab-search").hidden = true;
-        switch (tab) {
-            case "add":
-            default:
-                document.getElementById("tab-add").hidden = false;
-                break;
-            case "search":
-                document.getElementById("tab-search").hidden = false;
-                break;
-            case "prs":
-                document.getElementById("tab-prs").hidden = false;
-                await loadOpenPrs();
-                break;
-        }
-    }
-
     async function searchButton() {
         const query = document.getElementById("search.input").value;
         if (query.length < 2) {
@@ -786,7 +774,6 @@
     }
 
     async function start() {
-        tabSelect("add");
         await clearUser();
         refreshUser();
         token = getTokenQP();
@@ -800,232 +787,246 @@
         }
         refreshUser();
         await tokenInputChanged();
+
+        var app = new Vue({
+            el: '#app',
+            data: {
+                activeTab: 'tab-add'
+            },
+            methods: {
+            }
+        });
     }
 </script>
 
 <body onload="start()">
-    <div id="header">
-        <span id="menu">
-            <a href="#" onclick="tabSelect('add')">Add New Token</a>
-            <a href="#" onclick="tabSelect('prs')">Pull Requests</a>
-            <a href="#" onclick="tabSelect('search')">Token Search</a>
-        </span>
-        <span id="menu-right">
-            <span id="user">-</span>
-        </span>
-    </div>
-    <div id="main">
-        <table>
-            <tr>
-                <td>
-                    <div id="tab-add">
+    <span id="app">
+        <div id="header">
+            <span id="menu">
+                <a v-on:click="activeTab = 'tab-add'">Add New Token</a>
+                <a v-on:click="activeTab = 'tab-prs'; loadOpenPrs();">Pull Requests</a>
+                <a v-on:click="activeTab = 'tab-search'">Token Search</a>
+            </span>
+            <span id="menu-right">
+                <span id="user">-</span>
+            </span>
+        </div>
+        <div id="main">
+            <table>
+                <tr>
+                    <td>
+                        <div class="tab-pane" v-show="activeTab == 'tab-add'">
+                            <div>
+                                <h3>Add Token</h3>
+                                Please fill in the token/project details
+                            </div>
+                            <div>
+                                <table>
+                                    <tr>
+                                        <td>Name:</td>
+                                        <td>
+                                            <input class="input" id="input.name" placeholder="LegumeToken" size="20"
+                                                onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Type:</td>
+                                        <td>
+                                            <select id="input.type" name="type" class="input"
+                                                onchange="tokenInputChanged()" oninput="tokenInputChanged()">
+                                                <option value="ERC20">ERC20 (Ethereum)</option>
+                                                <option value="BEP2">BEP2 (Binance)</option>
+                                                <option value="BEP20">BEP20 (Binance Smart Chain)</option>
+                                                <option value="TRC10">TRC10 (Tron)</option>
+                                                <option value="TRC20">TRC20 (Tron)</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Contract/ID:</td>
+                                        <td>
+                                            <input class="input" id="input.contract"
+                                                placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
+                                                onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div>Logo:</div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <button class="button"
+                                                    onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                                <input id="input.file-selector" type="file" style="display: none;"
+                                                    onchange="logoFileSelected();" />
+                                                <span id="input.logo-input"></span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Website:</td>
+                                        <td>
+                                            <input class="input" id="input.website" placeholder="https://legume.fi"
+                                                size="40" onchange="tokenInputChanged()"
+                                                oninput="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Explorer:</td>
+                                        <td>
+                                            <input class="input" id="input.explorer"
+                                                placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                                                size="40" onchange="tokenInputChanged()"
+                                                oninput="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Short description:</td>
+                                        <td><textarea class="input" id="input.short_description"
+                                                placeholder="This is the best-tasting DeFi finance project."
+                                                style="width: 100%;" rows="2" onchange="tokenInputChanged()"
+                                                oninput="tokenInputChanged()"></textarea>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Check result:</td>
+                                        <td><textarea class="input" id="input.check-result" style="width: 100%;"
+                                                rows="3" onchange="tokenInputChanged()"
+                                                oninput="tokenInputChanged()"></textarea>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <button class="button" type="button" onclick="createBranchAndPull()">Create
+                                                PR</button>
+                                            <button class="button" type="button"
+                                                onclick="checkInputButton()">Check/Fix</button>
+                                            <button class="button" type="button" onclick="clearInput()">Clear</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="tab-pane" v-show="activeTab == 'tab-prs'" >
+                            <div>
+                                <h3>Pull Requests</h3>
+                            </div>
+                            <div>
+                                <button onclick="loadOpenPrs()">Search</button>
+                                <span id="prs.count"></span>
+                            </div>
+                            <select class="input" id="prs.result" multiple size="12" style="width: 100%"
+                                onchange="loadSelectedPrButton()">
+                                <option>(search results)</option>
+                            </select>
+                            <div id="pr-info" style="width: 100%">
+                                <hr />
+                                <div>
+                                    <span id="pr-info.title">PR</span>
+                                    <br>
+                                    repo: <span id="pr-info.repo"></span>
+                                </div>
+                                <div>
+                                    <div>Detected token(s) in PR:</div>
+                                    <select class="input" id="pr-info.tokens" multiple size="2" style="width: 100%"
+                                        onchange="loadTokensFromPr()">
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="tab-pane" v-show="activeTab == 'tab-search'">
+                                <div>
+                                <h3>Token Search</h3>
+                            </div>
+                            <div>
+                                <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
+                                <button onclick="searchButton()">Search</button>
+                            </div>
+                            <select class="input" id="search.result" multiple size="20" style="width: 100%"
+                                onchange="loadSearchResultButton()">
+                                <option>(search results)</option>
+                            </select>
+                            <div>
+                                <button onclick="loadSearchResultButton()">Load</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
                         <div>
-                            <h3>Add Token</h3>
-                            Please fill in the token/project details
+                            <h3>Token View</h3>
                         </div>
                         <div>
                             <table>
                                 <tr>
-                                    <td>Name:</td>
-                                    <td>
-                                        <input class="input" id="input.name" placeholder="LegumeToken" size="20"
-                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                    </td>
-                                </tr>
-                                <tr>
                                     <td>Type:</td>
                                     <td>
-                                        <select id="input.type" name="type" class="input" onchange="tokenInputChanged()"
-                                            oninput="tokenInputChanged()">
-                                            <option value="ERC20">ERC20 (Ethereum)</option>
-                                            <option value="BEP2">BEP2 (Binance)</option>
-                                            <option value="BEP20">BEP20 (Binance Smart Chain)</option>
-                                            <option value="TRC10">TRC10 (Tron)</option>
-                                            <option value="TRC20">TRC20 (Tron)</option>
-                                        </select>
+                                        <strong><span id="info.type"></span></strong>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Contract/ID:</td>
+                                    <td>Contract:</td>
                                     <td>
-                                        <input class="input" id="input.contract"
-                                            placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
-                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
+                                        <strong><span id="info.contract"></span></strong>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>
-                                        <div>Logo:</div>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            <button class="button"
-                                                onclick="document.getElementById('input.file-selector').click();">Upload</button>
-                                            <input id="input.file-selector" type="file" style="display: none;"
-                                                onchange="logoFileSelected();" />
-                                            <span id="input.logo-input"></span>
+                                    <td colspan="2">
+                                        Logo preview:
+                                        <div id="logo-preview" style="background-color: #E0E0E0;">
+                                            <span id="logo-preview-light"
+                                                style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
+                                                <p align="center"></p>
+                                                <p align="center"></p>
+                                                <p align="center"></p>
+                                            </span>
+                                            <span id="logo-preview-dark"
+                                                style="background-color: #202020; display: inline-block; padding: 20px; align: center">
+                                                <p align="center"></p>
+                                                <p align="center"></p>
+                                                <p align="center"></p>
+                                            </span>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Website:</td>
+                                    <td colspan="2">
+                                        <textarea class="input" id="info.info" readonly="true" style="width: 100%;"
+                                            rows="8"></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        Links:
+                                        <span id="info.links"></span>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td>
-                                        <input class="input" id="input.website" placeholder="https://legume.fi"
-                                            size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Explorer:</td>
-                                    <td>
-                                        <input class="input" id="input.explorer"
-                                            placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
-                                            size="40" onchange="tokenInputChanged()" oninput="tokenInputChanged()" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Short description:</td>
-                                    <td><textarea class="input" id="input.short_description"
-                                            placeholder="This is the best-tasting DeFi finance project."
-                                            style="width: 100%;" rows="2" onchange="tokenInputChanged()"
-                                            oninput="tokenInputChanged()"></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Check result:</td>
-                                    <td><textarea class="input" id="input.check-result" style="width: 100%;" rows="3"
-                                            onchange="tokenInputChanged()" oninput="tokenInputChanged()"></textarea>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td></td>
-                                    <td>
-                                        <button class="button" type="button" onclick="createBranchAndPull()">Create
-                                            PR</button>
-                                        <button class="button" type="button"
-                                            onclick="checkInputButton()">Check/Fix</button>
-                                        <button class="button" type="button" onclick="clearInput()">Clear</button>
+                                        <button class="button" type="button" onclick="checkInfoButton()">Check</button>
                                     </td>
                                 </tr>
                             </table>
                         </div>
-                    </div>
-                </td>
-                <td>
-                    <div id="tab-prs" hidden="true">
-                        <div>
-                            <h3>Pull Requests</h3>
-                        </div>
-                        <div>
-                            <button onclick="loadOpenPrs()">Search</button>
-                            <span id="prs.count"></span>
-                        </div>
-                        <select class="input" id="prs.result" multiple size="12" style="width: 100%"
-                            onchange="loadSelectedPrButton()">
-                            <option>(search results)</option>
-                        </select>
-                        <div id="pr-info" style="width: 100%">
-                            <hr />
-                            <div>
-                                <span id="pr-info.title">PR</span>
-                                <br>
-                                repo: <span id="pr-info.repo"></span>
-                            </div>
-                            <div>
-                                <div>Detected token(s) in PR:</div>
-                                <select class="input" id="pr-info.tokens" multiple size="2" style="width: 100%"
-                                    onchange="loadTokensFromPr()">
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div id="tab-search" hidden="true">
-                        <div>
-                            <h3>Token Search</h3>
-                        </div>
-                        <div>
-                            <input class="input" id="search.input" placeholder="TWT" onchange="searchButton()">
-                            <button onclick="searchButton()">Search</button>
-                        </div>
-                        <select class="input" id="search.result" multiple size="20" style="width: 100%"
-                            onchange="loadSearchResultButton()">
-                            <option>(search results)</option>
-                        </select>
-                        <div>
-                            <button onclick="loadSearchResultButton()">Load</button>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div>
-                        <h3>Token View</h3>
-                    </div>
-                    <div>
-                        <table>
-                            <tr>
-                                <td>Type:</td>
-                                <td>
-                                    <strong><span id="info.type"></span></strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Contract:</td>
-                                <td>
-                                    <strong><span id="info.contract"></span></strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    Logo preview:
-                                    <div id="logo-preview" style="background-color: #E0E0E0;">
-                                        <span id="logo-preview-light"
-                                            style="background-color: #E0E0E0; display: inline-block; padding: 20px; align: center">
-                                            <p align="center"></p>
-                                            <p align="center"></p>
-                                            <p align="center"></p>
-                                        </span>
-                                        <span id="logo-preview-dark"
-                                            style="background-color: #202020; display: inline-block; padding: 20px; align: center">
-                                            <p align="center"></p>
-                                            <p align="center"></p>
-                                            <p align="center"></p>
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    <textarea class="input" id="info.info" readonly="true" style="width: 100%;"
-                                        rows="8"></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    Links:
-                                    <span id="info.links"></span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <button class="button" type="button" onclick="checkInfoButton()">Check</button>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-                <td hidden="true">
-                    <img id="image-placeholder-for-size-computation" src="favicon.ico" />
-                </td>
-            </tr>
-        </table>
-    </div>
-    <div id="footer">
-        <span>
-            <img src="favicon.ico" height="20" />
-            <a>Trust Wallet Assets App</a>
-        </span>
-    </div>
+                    </td>
+                    <td hidden="true">
+                        <img id="image-placeholder-for-size-computation" src="favicon.ico" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="footer">
+            <span>
+                <img src="favicon.ico" height="20" />
+                <a>Trust Wallet Assets App</a>
+            </span>
+        </div>
+    </span>
     <div>
         <div>
             <h3>Debug Section</h3>
