@@ -8,12 +8,19 @@ const http = require('http');
 const url = require('url');
 const finalhandler = require('finalhandler');
 const serveStatic = require('serve-static');
-//const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 const { createOAuthAppAuth } = require("@octokit/auth-oauth-app");
 
-const clientId = "b9ff96b9717574ee8189";
-const clientSecret = "fd107ac0d0a52c3513b7e29bf10e528079b334fe";
-const port = 3000;
+dotenv.config();
+const port = process.env.PORT || 3000;
+const clientId = process.env.CLIENT_ID;
+const clientSecret = process.env.CLIENT_SECRET;
+if (!clientId) {
+    console.log("Missing CLIENT_ID!");
+} else {
+    console.log("ClientId:", clientId);
+}
+if (!clientSecret) { console.log("Missing CLIENT_SECRET!"); }
 
 var access_token = null;
 
@@ -23,7 +30,7 @@ async function handleCallback(request, response) {
     const code = queryObject["code"];
     console.log(`code: ${code}`);
     if (!code) {
-        response.writeHead(500, {'Content-Type': 'text/html'});
+        response.writeHead(500, { 'Content-Type': 'text/html' });
         response.end(`Code not found`);
         return;
     }
@@ -44,7 +51,7 @@ async function handleCallback(request, response) {
     const token = tokenAuthentication["token"];
     console.log(`token: ${token}`);
     if (!token) {
-        response.writeHead(500, {'Content-Type': 'text/html'});
+        response.writeHead(500, { 'Content-Type': 'text/html' });
         response.end(`Could not retrieve token from code, code: ${code}`);
         return;
     }
@@ -52,7 +59,7 @@ async function handleCallback(request, response) {
     console.log(`Saved token: ${access_token}`);
 
     const redir = `/index.html?token=${access_token}`;
-    response.writeHead(300, {'Location': redir});
+    response.writeHead(300, { 'Location': redir });
     response.end('');
 }
 
