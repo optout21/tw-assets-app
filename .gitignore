@@ -111,3 +111,5 @@ assetsLib/dist/
 
 static-files/bundle.js
 static-files/assetsLib.es.js
+
+.env
