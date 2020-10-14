@@ -38,10 +38,10 @@ textarea {
   text-decoration: none;
   color: #38659e;
 }
-#menu a {
+#menu-left a {
   padding: 8px;
 }
-#menu a:hover {
+#menu-left a:hover {
   background-color: #e0e6ee;
 }
 #menu-right {
@@ -50,4 +50,8 @@ textarea {
 }
 #logo-preview img {
   border-radius: 48%;
+}
+#footer-right {
+  text-align: right;
+  float: right;
 }
