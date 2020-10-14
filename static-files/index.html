@@ -16,6 +16,8 @@
 <script>
     const appName = "tw-assets-management";
     const clientId = "b9ff96b9717574ee8189";
+    const appScopes = "public_repo%20read:user";
+    const gitHub = "https://github.com";
 
     const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
     const testLogoUrls = [
@@ -35,6 +37,35 @@
     async function myAlert(message) {
         addLog(message);
         alert(message);
+    }
+
+    function authHeaders(userToken) {
+        return { authorization: `token ${userToken}` };
+    }
+
+    function loginActionUrl() {
+        return `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
+    }
+
+    function getTokenQP() {
+        var urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get("token");
+    }
+
+    async function getUser(userToken) {
+        const result = await script.octoRequest("GET /user", { headers: authHeaders(userToken) });
+        return result.data;
+    }
+
+    async function checkUser(userToken) {
+        if (!userToken) {
+            return "";
+        }
+        const user = await getUser(userToken);
+        if (!user || !user.login) {
+            return "";
+        }
+        return user.login;
     }
 
     // Retrieve the size of an image (url or stream) but placing in a hidden img and retrieving size
@@ -85,7 +116,14 @@
     function start() {
         var app = new Vue({
             el: '#app',
+            async created() {
+                this.userToken = getTokenQP();
+                this.loginName = await checkUser(this.userToken);
+                this.clearInput();
+            },
             data: {
+                userToken: null,
+                loginName: '',
                 activeTab: 'tab-add',
                 tokenInput: tokenInput = new script.assets.TokenInput(),
                 tokenInputCheckResult: '',
@@ -100,21 +138,33 @@
                         loadOpenPrs();
                     }
                 },
+                clearUser: function () {
+                    this.userToken = null;
+                    loginName = '';
+                    this.clearInput();
+                },
+                logout: function () {
+                    this.clearUser();
+                },
+                clearInput: function () {
+                    this.tokenInput = new script.assets.TokenInput();
+                    this.inputLogoSetStream(null, null, 0, null);
+                },
                 checkInput: async function () {
                     // don't display check result if all inputs are emopty
-                    if (!tokenInput.name && !tokenInput.contract && !tokenInput.logoStream) {
+                    if (!this.tokenInput.name && !this.tokenInput.contract && !this.tokenInput.logoStream) {
                         this.tokenInputCheckResult = "";
                         //document.getElementById("input.check-result").style["color"] = "";
                         return "";
                     }
 
                     // auto-fill explorer
-                    if (tokenInput.contract && !tokenInput.explorerUrl) {
-                        const explorer = script.assets.explorerUrl(tokenInput.type, tokenInput.contract);
-                        tokenInput.explorerUrl = explorer;
+                    if (this.tokenInput.contract && !this.tokenInput.explorerUrl) {
+                        const explorer = script.assets.explorerUrl(this.tokenInput.type, this.tokenInput.contract);
+                        this.tokenInput.explorerUrl = explorer;
                     }
 
-                    const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, { get: getImageDimension });
+                    const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput, { get: getImageDimension });
                     if (resnum >= 2) {
                         this.tokenInputCheckResult = "ERROR:\n" + resmsg;
                         //document.getElementById("input.check-result").style["color"] = "red";
@@ -127,9 +177,8 @@
                     }
                 },
                 checkInputButton: async function () {
-                    await this.checkInput();
                     addLog("starting TokenInput check...");
-                    const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(tokenInput, { get: getImageDimension });
+                    const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput, { get: getImageDimension });
                     if (resnum == 0) {
                         myAlert("Check result: OK\n" + resmsg);
                         return;
@@ -147,9 +196,8 @@
                     tokenInput = fixed;
                     myAlert("Check result: Fixed! \n " + resmsg);
                 },
-                clearInput: function () {
-                    this.tokenInput = new script.assets.TokenInput();
-                    this.inputLogoSetStream(null, null, 0, null);
+                tokenInputChanged: async function () {
+                    await this.checkInput();
                 },
                 inputLogoSetStream: function (stream, hintName, hintSize, hintMime) {
                     if (!stream) {
@@ -191,20 +239,20 @@
                             var contents = evt.target.result;
                             var base64 = arrayBufferToBase64(contents);
                             app.inputLogoSetStream(base64, file.name, file.size, file.type);
-                            //await checkAndRefreshTokenInfo();
+                            await app.tokenInputChanged();
                         }
                         reader.onerror = function (evt) {
                             myAlert(`Error reading file ${file.name}`);
                         }
                     }
                 },
-                debugTestLogoGetNext: async function() {
+                debugTestLogoGetNext: async function () {
                     this.testLogoIndex = (this.testLogoIndex + 1) % testLogoUrls.length;
                     const [streamArray, mime] = await logoStreamFromUrl(testLogoUrls[this.testLogoIndex]);
                     const stream = arrayBufferToBase64(streamArray);
                     this.inputLogoSetStream(stream, "test" + this.testLogoIndex, streamArray.byteLength, mime);
                 },
-                debugFillWithDummyData: async function() {
+                debugFillWithDummyData: async function () {
                     this.tokenInput.name = "LegumeToken";
                     this.tokenInput.type = "erc20";
                     this.tokenInput.contract = sampleEthContract;
@@ -212,6 +260,7 @@
                     this.tokenInput.description = "This is the best-tasting DeFi finance project.";
                     this.tokenInput.explorerUrl = `https://etherscan.io/token/${sampleEthContract}`;
                     await this.debugTestLogoGetNext();
+                    await this.tokenInputChanged();
                 }
             }
         });
@@ -226,92 +275,115 @@
                 <a v-on:click="selectTab('tab-prs')">Pull Requests</a>
                 <a v-on:click="selectTab('tab-search')">Token Search</a>
             </span>
+            <span id="menu-right">
+                <span v-show="userToken == null">
+                    <a :href="loginActionUrl()">Log in</a>
+                </span>
+                <span v-show="userToken != null">
+                    <span>user: {{loginName}}
+                    </span>
+                    <span>
+                        <a href="#" v-on:click="logout()">Logout</a>
+                    </span>
+                </span>
+            </span>
         </div>
         <div id="main">
             <div class="tab-pane" v-show="activeTab == 'tab-add'">
-                <div>
-                    <h3>Add Token</h3>
-                    Please fill in the token/project details
-                </div>
-                <div>
-                    <table>
-                        <tr>
-                            <td>Name:</td>
-                            <td>
-                                <input v-model="tokenInput.name" class="input" placeholder="Token Name" size="20" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Type:</td>
-                            <td>
-                                <select v-model="tokenInput.type" class="input">
-                                    <option value="erc20">ERC20 (Ethereum)</option>
-                                    <option value="bep2">BEP2 (Binance)</option>
-                                    <option value="bep20">BEP20 (Binance Smart Chain)</option>
-                                    <option value="trc10">TRC10 (Tron)</option>
-                                    <option value="trc20">TRC20 (Tron)</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Contract/ID:</td>
-                            <td>
-                                <input v-model="tokenInput.contract" class="input"
-                                    placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div>Logo:</div>
-                            </td>
-                            <td>
-                                <div>
-                                    <button class="button"
-                                        onclick="document.getElementById('input.file-selector').click();">Upload</button>
-                                    <input id="input.file-selector" type="file" style="display: none;"
-                                        v-on:change="logoFileSelected();" />
-                                    <span v-html="inputLogoText" id="input.logo-input"></span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Website:</td>
-                            <td>
-                                <input v-model="tokenInput.website" class="input" placeholder="https://tokenproject.fi"
-                                    size="40" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Explorer:</td>
-                            <td>
-                                <input v-model="tokenInput.explorerUrl" class="input"
-                                    placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
-                                    size="40" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Short description:</td>
-                            <td><textarea v-model="tokenInput.description" class="input"
-                                    placeholder="Short description of the project" style="width: 100%;"
-                                    rows="2"></textarea>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Check result:</td>
-                            <td><textarea v-model="tokenInputCheckResult" class="input" style="width: 100%;"
-                                    rows="3"></textarea>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <button class="button" type="button" onclick="createBranchAndPull()">Create PR</button>
-                                <button class="button" type="button" v-on:click="checkInputButton()">Check/Fix</button>
-                                <button class="button" type="button" v-on:click="clearInput()">Clear</button>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+                <span v-show="!userToken">
+                    You need to log in with your GitHub account.
+                    Please  <a :href="loginActionUrl()">Log in</a>
+                </span>
+                <span v-show="userToken">
+                    <div>
+                        <h3>Add Token</h3>
+                        Please fill in the token/project details
+                    </div>
+                    <div>
+                        <table>
+                            <tr>
+                                <td>Name:</td>
+                                <td>
+                                    <input v-model="tokenInput.name" class="input" placeholder="Token Name" size="20"
+                                        v-on:change="tokenInputChanged()" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Type:</td>
+                                <td>
+                                    <select v-model="tokenInput.type" class="input" v-on:change="tokenInputChanged()">
+                                        <option value="erc20">ERC20 (Ethereum)</option>
+                                        <option value="bep2">BEP2 (Binance)</option>
+                                        <option value="bep20">BEP20 (Binance Smart Chain)</option>
+                                        <option value="trc10">TRC10 (Tron)</option>
+                                        <option value="trc20">TRC20 (Tron)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Contract/ID:</td>
+                                <td>
+                                    <input v-model="tokenInput.contract" class="input"
+                                        placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
+                                        v-on:change="tokenInputChanged()" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div>Logo:</div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <button class="button"
+                                            onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                        <input id="input.file-selector" type="file" style="display: none;"
+                                            v-on:change="logoFileSelected()" />
+                                        <span v-html="inputLogoText" id="input.logo-input"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Website:</td>
+                                <td>
+                                    <input v-model="tokenInput.website" class="input"
+                                        placeholder="https://tokenproject.fi" size="40"
+                                        v-on:change="tokenInputChanged()" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Explorer:</td>
+                                <td>
+                                    <input v-model="tokenInput.explorerUrl" class="input"
+                                        placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                                        size="40" v-on:change="tokenInputChanged()" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Short description:</td>
+                                <td><textarea v-model="tokenInput.description" class="input"
+                                        placeholder="Short description of the project" style="width: 100%;" rows="2"
+                                        v-on:change="tokenInputChanged()"></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Check result:</td>
+                                <td><textarea v-model="tokenInputCheckResult" class="input" style="width: 100%;"
+                                        rows="3"></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <button class="button" type="button" onclick="createBranchAndPull()">Create
+                                        PR</button>
+                                    <button class="button" type="button"
+                                        v-on:click="checkInputButton()">Check/Fix</button>
+                                    <button class="button" type="button" v-on:click="clearInput()">Clear</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </span>
             </div>
             <div>
                 <table>
@@ -351,7 +423,8 @@
         </div>
         <div id="footer">
             <span id="footer-left">
-                <input type="checkbox" id="cb_debug_mode" v-model="debugMode" /><label for="cb_debug_mode">Debug Mode</label>
+                <input type="checkbox" id="cb_debug_mode" v-model="debugMode" /><label for="cb_debug_mode">Debug
+                    Mode</label>
             </span>
             <span id="footer-right">
                 <a>Trust Wallet Assets App</a>
