@@ -33,6 +33,11 @@ textarea {
 }
 #main {
   background-color: #e0e6ee;
+  min-height: 400;
+  display: flex;
+}
+.tab-pane {
+  margin: auto;
 }
 #header a {
   text-decoration: none;
