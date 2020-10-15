@@ -55,3 +55,7 @@ textarea {
   text-align: right;
   float: right;
 }
+.input_label_td {
+  vertical-align: top;
+  padding: 5px;
+}

@@ -114,6 +114,112 @@
     }
 
     function start() {
+        // Preview for a single logo, supports url and stream, rounded mask, dimming
+        Vue.component('logo-single-preview', {
+            props: {
+                size: Number,
+                logourl: String,
+                logostream: String,
+                dimmed: Boolean,
+                rounded: Boolean
+            },
+            computed: {
+                src: function () {
+                    if (this.logostream) {
+                        // image data inline
+                        return "data:image/gif;base64," + this.logostream;
+                    }
+                    if (this.logourl) { return this.logourl; }
+                    // fallback TODO replace with placeholder image
+                    return "favicon.ico";
+                },
+                opacity: function () { return this.dimmed ? 0.6 : 1; },
+                roundedRadius: function () { return this.rounded ? "48%" : "0%" },
+                style: function () { return `opacity: ${this.opacity}; border-radius: ${this.roundedRadius};`; }
+            },
+            data: function () {
+                return {}
+            },
+            template: `<img :width="size" :height="size" v-bind:src="this.src" :style="style" />`
+        });
+
+        // Token text for preview
+        Vue.component('logo-preview-with-name', {
+            props: {
+                logourl: String,
+                logostream: String,
+                name: String,
+                dimmed: Boolean,
+            },
+            template:
+                `
+                    <tr>
+                        <td style="padding: 5;">
+                            <logo-single-preview :size="32" :logourl="logourl" :logostream="logostream" :dimmed="dimmed" :rounded="true" />
+                        </td>
+                        <td style="align: right; width: 100px;">
+                            <span style="vertical-align: center; font-size: 70%;">{{name}}</span>
+                        </td>
+                    </tr>
+                `
+        });
+
+        // Logo preview  with a few other logos above/below
+        Vue.component('logo-column-preview', {
+            props: {
+                logourl: String,
+                logostream: String,
+                tokenname: String,
+                textcolor: String,
+            },
+            data: function () {
+                return {
+                    logosBuiltin: {
+                        Bitcoin: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/bitcoin/info/logo.png",
+                        Trust: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/assets/TWT-8C2/logo.png",
+                        Binance: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/info/logo.png",
+                        Ethereum: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png"
+                    }
+                }
+            },
+            template:
+                `
+                    <div style="display: inline-block; padding: 15px; align: right;">
+                        <table :style="'color: ' + textcolor + '; width: 130px;'">
+                            <logo-preview-with-name :logourl="logosBuiltin['Bitcoin']" name="Bitcoin" :dimmed="true" />
+                            <logo-preview-with-name :logourl="logosBuiltin['Trust']" name="Trust" :dimmed="true" />
+                            <logo-preview-with-name :logourl="logourl" :logostream="logostream" :name="tokenname" :dimmed="false" />
+                            <logo-preview-with-name :logourl="logosBuiltin['Binance']" name="Binance" :dimmed="true" />
+                            <logo-preview-with-name :logourl="logosBuiltin['Ethereum']" name="Ethereum" :dimmed="true" />
+                        </table>
+                    </div>
+                `
+        });
+
+        // Log preview with a column with light background and one with dark background
+        Vue.component('logo-preview', {
+            props: {
+                logourl: String,
+                logostream: String,
+                tokenname: String
+            },
+            template:
+                `
+                    <div>
+                        <table>
+                            <tr>
+                                <td style="background-color: #E0E0E0;">
+                                    <logo-column-preview :logourl="logourl" :logostream="logostream" :tokenname="tokenname" textcolor="black" />
+                                </td>
+                                <td style="background-color: #202020; color: white;">
+                                    <logo-column-preview :logourl="logourl" :logostream="logostream" :tokenname="tokenname" textcolor="white" />
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                `
+        });
+
         var app = new Vue({
             el: '#app',
             async created() {
@@ -215,7 +321,7 @@
                         this.tokenInput.logoStreamSize = hintSize;
                         text += `${hintSize} bytes`;
                     } else {
-                        text += `${tokenInput.logoStream.length} base64 bytes`;
+                        text += `${this.tokenInput.logoStream.length} base64 bytes`;
                     }
                     if (hintName) {
                         text += `, ${hintName}`;
@@ -292,7 +398,7 @@
             <div class="tab-pane" v-show="activeTab == 'tab-add'">
                 <span v-show="!userToken">
                     You need to log in with your GitHub account.
-                    Please  <a :href="loginActionUrl()">Log in</a>
+                    Please <a :href="loginActionUrl()">Log in</a>
                 </span>
                 <span v-show="userToken">
                     <div>
@@ -302,14 +408,14 @@
                     <div>
                         <table>
                             <tr>
-                                <td>Name:</td>
+                                <td class="input_label_td">Name:</td>
                                 <td>
                                     <input v-model="tokenInput.name" class="input" placeholder="Token Name" size="20"
                                         v-on:change="tokenInputChanged()" />
                                 </td>
                             </tr>
                             <tr>
-                                <td>Type:</td>
+                                <td class="input_label_td">Type:</td>
                                 <td>
                                     <select v-model="tokenInput.type" class="input" v-on:change="tokenInputChanged()">
                                         <option value="erc20">ERC20 (Ethereum)</option>
@@ -321,7 +427,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Contract/ID:</td>
+                                <td class="input_label_td">Contract/ID:</td>
                                 <td>
                                     <input v-model="tokenInput.contract" class="input"
                                         placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
@@ -329,7 +435,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>
+                                <td class="input_label_td">
                                     <div>Logo:</div>
                                 </td>
                                 <td>
@@ -343,7 +449,20 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Website:</td>
+                                <td class="input_label_td">
+                                    <div>Preview:</div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <logo-preview
+                                            :logostream="tokenInput.logoStream"
+                                            v-bind:tokenname="tokenInput.name" />
+                                        </logo-preview>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="input_label_td">Website:</td>
                                 <td>
                                     <input v-model="tokenInput.website" class="input"
                                         placeholder="https://tokenproject.fi" size="40"
@@ -351,7 +470,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Explorer:</td>
+                                <td class="input_label_td">Explorer:</td>
                                 <td>
                                     <input v-model="tokenInput.explorerUrl" class="input"
                                         placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
@@ -359,14 +478,14 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Short description:</td>
+                                <td class="input_label_td">Short description:</td>
                                 <td><textarea v-model="tokenInput.description" class="input"
                                         placeholder="Short description of the project" style="width: 100%;" rows="2"
                                         v-on:change="tokenInputChanged()"></textarea>
                                 </td>
                             </tr>
                             <tr>
-                                <td>Check result:</td>
+                                <td class="input_label_td">Check result:</td>
                                 <td><textarea v-model="tokenInputCheckResult" class="input" style="width: 100%;"
                                         rows="3"></textarea>
                                 </td>
