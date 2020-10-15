@@ -18,6 +18,11 @@
     const clientId = "b9ff96b9717574ee8189";
     const appScopes = "public_repo%20read:user";
     const gitHub = "https://github.com";
+    const mainRepoOwner = "trustwallet";
+    const mainRepoName = "assets";
+    const mainRepoFullName = mainRepoOwner + "/" + mainRepoName;
+    const mainRepoUrl = `${gitHub}/${mainRepoFullName}.git`;
+    const prBodyFooter = `\n\nPR created by ${appName}`;
 
     const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
     const testLogoUrls = [
@@ -66,6 +71,51 @@
             return "";
         }
         return user.login;
+    }
+
+
+    async function getUserRepos(userToken) {
+        const result = await script.octoRequest("GET /user/repos", { headers: authHeaders(userToken) });
+        return result.data;
+    }
+
+    async function getRepo(userToken, owner, repo) {
+        const result = await script.octoRequest("GET /repos/:owner/:repo", {
+            headers: authHeaders(userToken),
+            owner: owner,
+            repo: repo
+        });
+        return result.data;
+    }
+
+    async function checkRepo(userToken, loginName) {
+        if (!userToken || !loginName) {
+            return null;
+        }
+        const repos = await getUserRepos(userToken);
+        if (!repos || repos.length == 0) {
+            return null;
+        }
+        // first try under 'assets' name
+        for (const r of repos) {
+            if (r.fork && r.name === mainRepoName) {
+                const r2 = await getRepo(userToken, loginName, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    return r.name;
+                }
+            }
+        }
+        // try again all others
+        for (const r of repos) {
+            if (r.fork) {
+                const r2 = await getRepo(userToken, loginName, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    return r.name;
+                }
+            }
+        }
+        return null;
+        //addLog(`User ${loginname}, fork repo ${repo}`);
     }
 
     // Retrieve the size of an image (url or stream) but placing in a hidden img and retrieving size
@@ -223,13 +273,17 @@
         var app = new Vue({
             el: '#app',
             async created() {
+                console.log("created");
+                this.clearInput();
                 this.userToken = getTokenQP();
                 this.loginName = await checkUser(this.userToken);
-                this.clearInput();
+                this.repo = await checkRepo(this.userToken, this.loginName);
+                console.log(this.repo);
             },
             data: {
                 userToken: null,
-                loginName: '',
+                loginName: null,
+                repo: null,
                 activeTab: 'tab-add',
                 tokenInput: tokenInput = new script.assets.TokenInput(),
                 tokenInputCheckResult: '',
@@ -386,7 +440,11 @@
                     <a :href="loginActionUrl()">Log in</a>
                 </span>
                 <span v-show="userToken != null">
-                    <span>user: {{loginName}}
+                    <span v-show="repo == null">
+                        No <a :href="mainRepoUrl" target="_blank">fork</a> found for user {{loginName}}!
+                    </span>
+                    <span v-show="repo != null">
+                        <a :href="gitHub + '/' + loginName + '/' + repo + '.git'" target="_blank">{{loginName}}/{{repo}}</a>
                     </span>
                     <span>
                         <a href="#" v-on:click="logout()">Logout</a>
