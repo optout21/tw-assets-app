@@ -115,7 +115,7 @@
             }
         }
         return null;
-        //addLog(`User ${loginname}, fork repo ${repo}`);
+        //addLog(`User ${loginName}, fork repo ${repo}`);
     }
 
     // Retrieve the size of an image (url or stream) but placing in a hidden img and retrieving size
@@ -158,9 +158,208 @@
         return window.btoa(binary);
     }
 
-    function createBranchAndPull() {
-        // TODO
-        console.log('createBranchAndPull', JSON.stringify(tokenInput));
+    function createPullError(message) {
+        myAlert("PR creation error: " + message);
+    }
+
+    function newBranchName() {
+        const today = new Date();
+        const date = (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0') +
+            '-' + today.getHours().toString().padStart(2, '0') + today.getMinutes().toString().padStart(2, '0') + today.getSeconds().toString().padStart(2, '0');
+        return "br" + date;
+    }
+
+    async function getBranchRef(userToken, loginName, repo, branch) {
+        const result = await script.octoRequest("GET /repos/{owner}/{repo}/git/ref/{ref}", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            ref: "heads/" + branch
+        });
+        return result.data.object.sha;
+    }
+
+    async function createBranch(userToken, loginName, repo, branchName) {
+        const ref = await getBranchRef(userToken, loginName, repo, "master");
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/refs", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            ref: `refs/heads/${branchName}`,
+            sha: ref
+        });
+        return result.data.ref;
+    }
+
+    async function createBlob(userToken, loginName, repo, content, encoding) {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/blobs", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            content: content,
+            encoding: encoding
+        });
+        return result.data.sha;
+    }
+
+    async function createFiles(userToken, loginName, repo, basePath, subFolder, logoContents, infoJsonContent) {
+        var fileInfos = [];
+
+        const folder = basePath + "/" + subFolder;
+
+        const logoSha = await createBlob(userToken, loginName, repo, logoContents, "base64");
+        if (!logoSha) {
+            return null;
+        }
+        fileInfos.push({ path: folder + "/logo.png", sha: logoSha, mode: "100644", type: "blob" });
+
+        fileInfos.push({ path: folder + "/info.json", content: infoJsonContent, mode: "100644", type: "blob" });
+
+        return fileInfos;
+    }
+
+    async function createTree(userToken, loginName, repo, baseSha, fileInfos) {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/trees", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            tree: fileInfos,
+            base_tree: baseSha
+        });
+        return result.data.sha;
+    }
+
+    async function createCommit(userToken, loginName, repo, baseSha, tree, tokenName) {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/commits", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            message: `Info for token ${tokenName}`,
+            tree: tree,
+            parents: [baseSha]
+        });
+        return result.data.sha;
+    }
+
+    async function updateReference(userToken, loginName, repo, ref, sha) {
+        const result = await script.octoRequest("POST /repos/:owner/:repo/git/refs/:ref", {
+            headers: authHeaders(userToken),
+            owner: loginName,
+            repo: repo,
+            ref: ref,
+            sha: sha
+        });
+        return result.data.object.sha;
+    }
+
+    async function createPull(userToken, loginName, repo, branchName, tokenName, tokenType, debugPrTargetFork) {
+        const title = `Add ${tokenName} (${tokenType})`;
+        const text = `Adding info for ${tokenType} token '${tokenName}'.\n\n${prBodyFooter}`;
+        var owner1 = mainRepoOwner;
+        var repo1 = mainRepoName;
+        if (debugPrTargetFork) {
+            owner1 = loginName;
+            repo1 = repo;
+        }
+        const result = await script.octoRequest("POST /repos/:owner/:repo/pulls", {
+            headers: authHeaders(userToken),
+            owner: owner1,
+            repo: repo1,
+            title: title,
+            head: loginName + ":" + branchName,
+            base: "master",
+            body: text,
+            maintainer_can_modify: true,
+            draft: false
+        });
+        return result.data.number;
+    }
+
+    async function createBranchAndPull(userToken, loginName, repo, tokenInput, debugPrTargetFork) {
+        if (!loginName) {
+            createPullError("Log in first!");
+            return;
+        }
+        if (!repo) {
+            createPullError("Create a fork of the assets repo first!");
+            return;
+        }
+        if (!tokenInput.contract || !tokenInput.name || !tokenInput.type || !tokenInput.logoStream) {
+            createPullError("Fill in all the fields!");
+            return;
+        }
+        tokenInfo = tokenInput.toTokenInfo();
+        if (!tokenInfo) {
+            createPullError("TokenInput error");
+            return;
+        }
+
+        const branchName = newBranchName();
+
+        addLog(`name: ${tokenInput.name}  type: ${tokenInput.type}  contract: ${tokenInput.contract}  branch ${branchName}`);
+
+        const branchRef = await createBranch(userToken, loginName, repo, branchName);
+        if (!branchRef) {
+            createPullError(`Could not create branch ${branchName}`);
+            return;
+        }
+        addLog(`Created branch ${loginName}/${repo}/${branchName}`);
+
+        let stream = null;
+        if (tokenInput.logoStream && tokenInput.logoStream.length > 10) {
+            // stream is there, use that
+            stream = tokenInput.logoStream;
+        }
+        if (!stream) {
+            createPullError(`Could not retrieve logo contents`);
+            return;
+        }
+
+        const chain = script.assets.chainFromType(tokenInput.type);
+        if (!chain || chain == "unknown") {
+            createPullError(`Could not retrieve chain from token type ${tokenInput.type}`);
+            return;
+        }
+
+        const fileInfos = await createFiles(userToken, loginName, repo, `blockchains/${chain}/assets`, tokenInput.contract, stream, tokenInfo.infoString);
+        if (!fileInfos || fileInfos.length == 0) {
+            createPullError(`Could not create files`);
+            return;
+        }
+        addLog(`Created ${fileInfos.length} new files`);
+
+        const branchSha = await getBranchRef(userToken, loginName, repo, branchName);
+        if (!branchSha) {
+            createPullError(`Could not get ref for branch ${branchName}`);
+            return;
+        }
+
+        const tree = await createTree(userToken, loginName, repo, branchSha, fileInfos);
+        if (!tree) {
+            createPullError(`Could not create tree with files`);
+            return;
+        }
+
+        const commit = await createCommit(userToken, loginName, repo, branchSha, tree, tokenInput.name);
+        if (!commit) {
+            createPullError(`Could not create commit`);
+            return;
+        }
+        addLog(`Created new commit ${commit}`);
+
+        const newBranchSha = await updateReference(userToken, loginName, repo, "heads/" + branchName, commit);
+        if (!newBranchSha) {
+            createPullError(`Could not update branch ${branchName} to commit ${commit}`);
+            return;
+        }
+
+        const pullNumber = await createPull(userToken, loginName, repo, branchName, tokenInput.name, tokenInput.type, debugPrTargetFork);  // true for debug
+        if (!pullNumber) {
+            createPullError(`Could not create PR`);
+            return;
+        }
+        const pullUrl = `${gitHub}/${loginName}/${repo}/pull/${pullNumber}`;
+        myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
     }
 
     function start() {
@@ -273,22 +472,21 @@
         var app = new Vue({
             el: '#app',
             async created() {
-                console.log("created");
                 this.clearInput();
                 this.userToken = getTokenQP();
                 this.loginName = await checkUser(this.userToken);
                 this.repo = await checkRepo(this.userToken, this.loginName);
-                console.log(this.repo);
             },
             data: {
                 userToken: null,
                 loginName: null,
                 repo: null,
                 activeTab: 'tab-add',
-                tokenInput: tokenInput = new script.assets.TokenInput(),
+                tokenInput: new script.assets.TokenInput(),
                 tokenInputCheckResult: '',
                 inputLogoText: '',
                 debugMode: false,
+                debugTargetFork: false,
                 testLogoIndex: 0
             },
             methods: {
@@ -315,7 +513,7 @@
                     if (!this.tokenInput.name && !this.tokenInput.contract && !this.tokenInput.logoStream) {
                         this.tokenInputCheckResult = "";
                         //document.getElementById("input.check-result").style["color"] = "";
-                        return "";
+                        return 2;
                     }
 
                     // auto-fill explorer
@@ -335,26 +533,28 @@
                         this.tokenInputCheckResult = "OK\n" + resmsg;
                         //document.getElementById("input.check-result").style["color"] = "";
                     }
+                    return resnum;
                 },
                 checkInputButton: async function () {
                     addLog("starting TokenInput check...");
                     const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput, { get: getImageDimension });
                     if (resnum == 0) {
                         myAlert("Check result: OK\n" + resmsg);
-                        return;
+                        return resnum;
                     }
                     if (!fixed) {
                         // cannot be fixed
                         if (resnum >= 2) {
                             myAlert("Check result: ERROR\n" + resmsg);
-                            return;
+                            return resnum;
                         }
                         myAlert("Check result: Warning\n" + resmsg);
-                        return;
+                        return resnum;
                     }
                     // can be fixed
                     tokenInput = fixed;
                     myAlert("Check result: Fixed! \n " + resmsg);
+                    return resnum;
                 },
                 tokenInputChanged: async function () {
                     await this.checkInput();
@@ -406,6 +606,14 @@
                         }
                     }
                 },
+                createPullButton: async function () {
+                    checkResult = await this.checkInputButton();
+                    if (checkResult != 0 && checkResult != 1) {
+                        addLog("Not creating PR due to check errors");
+                    } else {
+                        await createBranchAndPull(this.userToken, this.loginName, this.repo, this.tokenInput, this.debugTargetFork);
+                    }
+                },
                 debugTestLogoGetNext: async function () {
                     this.testLogoIndex = (this.testLogoIndex + 1) % testLogoUrls.length;
                     const [streamArray, mime] = await logoStreamFromUrl(testLogoUrls[this.testLogoIndex]);
@@ -444,7 +652,8 @@
                         No <a :href="mainRepoUrl" target="_blank">fork</a> found for user {{loginName}}!
                     </span>
                     <span v-show="repo != null">
-                        <a :href="gitHub + '/' + loginName + '/' + repo + '.git'" target="_blank">{{loginName}}/{{repo}}</a>
+                        <a :href="gitHub + '/' + loginName + '/' + repo + '.git'"
+                            target="_blank">{{loginName}}/{{repo}}</a>
                     </span>
                     <span>
                         <a href="#" v-on:click="logout()">Logout</a>
@@ -512,8 +721,7 @@
                                 </td>
                                 <td>
                                     <div>
-                                        <logo-preview
-                                            :logostream="tokenInput.logoStream"
+                                        <logo-preview :logostream="tokenInput.logoStream"
                                             v-bind:tokenname="tokenInput.name" />
                                         </logo-preview>
                                     </div>
@@ -551,7 +759,7 @@
                             <tr>
                                 <td></td>
                                 <td>
-                                    <button class="button" type="button" onclick="createBranchAndPull()">Create
+                                    <button class="button" type="button" v-on:click="createPullButton()">Create
                                         PR</button>
                                     <button class="button" type="button"
                                         v-on:click="checkInputButton()">Check/Fix</button>
@@ -595,12 +803,15 @@
                 <div>Debug Mode</div>
                 <div>
                     <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill test data</button>
+                    <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
+                        for="debug_pr_target_fork_cb">Create PR in fork
+                    </label>
                 </div>
             </div>
         </div>
         <div id="footer">
             <span id="footer-left">
-                <input type="checkbox" id="cb_debug_mode" v-model="debugMode" /><label for="cb_debug_mode">Debug
+                <input type="checkbox" id="debug_mode_cb" v-model="debugMode" /><label for="debug_mode_cb">Debug
                     Mode</label>
             </span>
             <span id="footer-right">
