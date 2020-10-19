@@ -63,10 +63,7 @@ textarea {
   color: #38659e;
 }
 #menu-left a {
-  padding: 8px;
-}
-#menu-left a:hover {
-  background-color: #e0e6ee;
+  padded: 8px;
 }
 #menu-right {
   text-align: right;
@@ -103,5 +100,8 @@ textarea {
   background-color: white;
 }
 .selection-item:hover {
+  background-color: #cbd7e8;
+}
+.selected-item {
   background-color: #e0e6ee;
 }

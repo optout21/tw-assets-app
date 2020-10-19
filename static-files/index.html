@@ -596,17 +596,25 @@
                 pull: Object,
                 tokenIds: Array,
             },
+            data: function() {
+                return {
+                    selectedToken: Object,
+                }
+            },
             async updated() {
                 //console.log("pull-content updated", this.tokenIds.length);
                 if (!this.tokenIds || this.tokenIds.length == 0) {
-                    this.$emit('select', null);
+                    this.selectedToken = null;
                 } else if (this.tokenIds && this.tokenIds.length >= 1) {
-                    this.$emit('select', this.tokenIds[0]);
+                    this.selectedToken = this.tokenIds[0];
                 }
+                this.$emit('select', this.selectedToken);
             },
             methods: {
                 onclick: function (e) {
                     const token = JSON.parse(e.target.attributes.token.value);
+                    this.selectedToken = token;
+                    console.log(this.tokenIds[0], this.selectedToken);
                     this.$emit('select', token);
                 },
             },
@@ -619,7 +627,8 @@
                             <div class="margined">Detected token(s) in PR:</div>
                         </div>
                         <div id="pull-content-list" class="selection-list margined ">
-                            <div v-for="token in tokenIds" class="selection-item" v-on:click="onclick" :token="JSON.stringify(token)" :tokentype="token.type" :tokenid="token.id">{{token.type}}: {{token.id}}</div>
+                            <div v-for="token in tokenIds" class="selection-item" v-on:click="onclick" :token="JSON.stringify(token)" :tokentype="token.type" :tokenid="token.id"
+                                v-bind:class="{'selected-item': token && selectedToken && token.id == selectedToken.id}">{{token.type}}: {{token.id}}</div>
                         </div>
                     </div>
                 `
@@ -685,7 +694,8 @@
                             <span>{{pulls.length}} PRs</span>
                         </div>
                         <div id="pulls-list-list" class="selection-list margined">
-                            <pull-item v-for="pull in pulls" :pull="pull" v-on:select="onselectpull"></pull-item>
+                            <pull-item v-for="pull in pulls" :pull="pull" v-on:select="onselectpull"
+                                v-bind:class="{'selected-item': pull.number == selected.number}"></pull-item>
                         </div>
                         <pull-content :pull="selected" :token-ids="selectedPullTokenIds" v-on:select="onselecttoken"></pull-content>
                     </div>
@@ -869,9 +879,9 @@
     <span id="app">
         <div id="header">
             <span id="menu-left">
-                <a v-on:click="selectTab('tab-add')">Add New Token</a>
-                <a v-on:click="selectTab('tab-prs')">Pull Requests</a>
-                <a v-on:click="selectTab('tab-search')">Token Search</a>
+                <a class="selection-item" v-on:click="selectTab('tab-add')" v-bind:class="{'selected-item': activeTab == 'tab-add'}">Add New Token</a>
+                <a class="selection-item" v-on:click="selectTab('tab-prs')" v-bind:class="{'selected-item': activeTab == 'tab-prs'}">Pull Requests</a>
+                <a class="selection-item" v-on:click="selectTab('tab-search')" v-bind:class="{'selected-item': activeTab == 'tab-search'}">Token Search</a>
             </span>
             <span id="menu-right">
                 <span v-show="userToken == null">
