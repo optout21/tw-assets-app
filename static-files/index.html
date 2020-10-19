@@ -816,151 +816,163 @@
                 </span>
             </span>
         </div>
-        <div id="main">
-            <div class="tab-pane" v-show="activeTab == 'tab-add'">
-                <span v-show="!userToken" style="text-align: center; margin: auto;">
+        <div>
+            <div id="main">
+                <div id="main-nouser" class="center" v-show="!userToken">
                     You need to log in with your GitHub account.
                     Please <a :href="loginActionUrl()">Log in</a>
-                </span>
-                <span v-show="userToken">
-                    <div class="margined">
-                        <h3>Add Token</h3>
-                        Please fill in the token/project details
-                    </div>
-                    <div>
-                        <table>
-                            <tr>
-                                <td class="input_label_td">Name:</td>
-                                <td>
-                                    <input v-model="tokenInput.name" class="input" placeholder="Token Name" size="20"
-                                        v-on:change="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Type:</td>
-                                <td>
-                                    <select v-model="tokenInput.type" class="input" v-on:change="tokenInputChanged()">
-                                        <option value="erc20">ERC20 (Ethereum)</option>
-                                        <option value="bep2">BEP2 (Binance)</option>
-                                        <option value="bep20">BEP20 (Binance Smart Chain)</option>
-                                        <option value="trc10">TRC10 (Tron)</option>
-                                        <option value="trc20">TRC20 (Tron)</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Contract/ID:</td>
-                                <td>
-                                    <input v-model="tokenInput.contract" class="input"
-                                        placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
-                                        v-on:change="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">
-                                    <div>Logo:</div>
-                                </td>
-                                <td>
-                                    <div>
-                                        <button class="button"
-                                            onclick="document.getElementById('input.file-selector').click();">Upload</button>
-                                        <input id="input.file-selector" type="file" style="display: none;"
-                                            v-on:change="logoFileSelected()" />
-                                        <span v-html="inputLogoText" id="input.logo-input"></span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">
-                                    <div>Preview:</div>
-                                </td>
-                                <td>
-                                    <div>
-                                        <logo-preview :logostream="tokenInput.logoStream"
-                                            :tokenname="tokenInput.name" />
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Website:</td>
-                                <td>
-                                    <input v-model="tokenInput.website" class="input"
-                                        placeholder="https://tokenproject.fi" size="40"
-                                        v-on:change="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Explorer:</td>
-                                <td>
-                                    <input v-model="tokenInput.explorerUrl" class="input"
-                                        placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
-                                        size="40" v-on:change="tokenInputChanged()" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Short description:</td>
-                                <td><textarea v-model="tokenInput.description" class="input"
-                                        placeholder="Short description of the project" style="width: 100%;" rows="2"
-                                        v-on:change="tokenInputChanged()"></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="input_label_td">Check result:</td>
-                                <td><textarea v-model="tokenInputCheckResult" class="input" style="width: 100%;"
-                                        rows="3"></textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td>
-                                    <button class="button" type="button" v-on:click="createPullButton()">Create
-                                        PR</button>
-                                    <button class="button" type="button"
-                                        v-on:click="checkInputButton()">Check/Fix</button>
-                                    <button class="button" type="button" v-on:click="clearInput()">Clear</button>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </span>
-            </div>
-            <div class="tab-pane" v-show="activeTab == 'tab-prs'">
-                <div class="margined">
-                    <h3>Pull Requests</h3>
                 </div>
-                <div class="tab-pane-twocol">
-                    <pulls-list :user-token="userToken" v-on:selecttoken="onPullSelectToken"></pulls-list>
-                    <token-view :token-info="tokenInfo"></token-view>
+                <div id="main2" v-show="userToken">
+                    <div id="tab-add" class="tab-pane flexrow" v-show="activeTab == 'tab-add'">
+                        <div>
+                            <div class="margined">
+                                <h3>Add Token</h3>
+                                Please fill in the token/project details
+                            </div>
+                            <div>
+                                <table>
+                                    <tr>
+                                        <td class="input_label_td">Name:</td>
+                                        <td>
+                                            <input v-model="tokenInput.name" class="input" placeholder="Token Name"
+                                                size="20" v-on:change="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Type:</td>
+                                        <td>
+                                            <select v-model="tokenInput.type" class="input"
+                                                v-on:change="tokenInputChanged()">
+                                                <option value="erc20">ERC20 (Ethereum)</option>
+                                                <option value="bep2">BEP2 (Binance)</option>
+                                                <option value="bep20">BEP20 (Binance Smart Chain)</option>
+                                                <option value="trc10">TRC10 (Tron)</option>
+                                                <option value="trc20">TRC20 (Tron)</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Contract/ID:</td>
+                                        <td>
+                                            <input v-model="tokenInput.contract" class="input"
+                                                placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
+                                                v-on:change="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">
+                                            <div>Logo:</div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <button class="button"
+                                                    onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                                <input id="input.file-selector" type="file" style="display: none;"
+                                                    v-on:change="logoFileSelected()" />
+                                                <span v-html="inputLogoText" id="input.logo-input"></span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">
+                                            <div>Preview:</div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <logo-preview :logostream="tokenInput.logoStream"
+                                                    :tokenname="tokenInput.name" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Website:</td>
+                                        <td>
+                                            <input v-model="tokenInput.website" class="input"
+                                                placeholder="https://tokenproject.fi" size="40"
+                                                v-on:change="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Explorer:</td>
+                                        <td>
+                                            <input v-model="tokenInput.explorerUrl" class="input"
+                                                placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                                                size="40" v-on:change="tokenInputChanged()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Short description:</td>
+                                        <td><textarea v-model="tokenInput.description" class="input"
+                                                placeholder="Short description of the project" style="width: 100%;"
+                                                rows="2" v-on:change="tokenInputChanged()"></textarea>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="input_label_td">Check result:</td>
+                                        <td><textarea v-model="tokenInputCheckResult" class="input"
+                                                style="width: 100%;" rows="3"></textarea>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <button class="button" type="button"
+                                                v-on:click="createPullButton()">Create
+                                                PR</button>
+                                            <button class="button" type="button"
+                                                v-on:click="checkInputButton()">Check/Fix</button>
+                                            <button class="button" type="button"
+                                                v-on:click="clearInput()">Clear</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div id="add-debug-mode-switch">
+                                <input type="checkbox" id="debug_mode_cb" v-model="debugMode" /><label
+                                    for="debug_mode_cb">Debug
+                                    Mode</label>
+                            </div>
+                        </div>
+                        <div v-show="debugMode" id="add-debug-mode">
+                            <div>Debug Mode</div>
+                            <div>
+                                <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill
+                                    test
+                                    data</button>
+                                <input type="checkbox" id="debug_pr_target_fork_cb"
+                                    v-model="debugTargetFork" /><label for="debug_pr_target_fork_cb">Create PR in
+                                    fork
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-pulls" class="tab-pane flexrow" v-show="activeTab == 'tab-prs'">
+                        <div id="pulls.list">
+                            <div class="margined">
+                                <h3>Pull Requests</h3>
+                            </div>
+                            <pulls-list :user-token="userToken" v-on:selecttoken="onPullSelectToken"></pulls-list>
+                        </div>
+                        <token-view :token-info="tokenInfo"></token-view>
+                    </div>
+                    <div id="tab-search" class="tab-pane flexrow" v-show="activeTab == 'tab-search'">
+                        <div>
+                            <div class="margined">
+                                <h3>Token Search</h3>
+                            </div>
+                            <div>
+                                TODO
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="tab-pane tab-pane-twocol" v-show="activeTab == 'tab-search'">
-                <span>
-                    <div class="margined">
-                        <h3>Token Search</h3>
-                    </div>
-                    <div>
-                        TODO
-                    </div>
-                </span>
-            </div>
-            <div hidden="true">
-                <img id="image-placeholder-for-size-computation" src="favicon.ico" />
-            </div>
-            <div v-show="debugMode">
-                <div>Debug Mode</div>
-                <div>
-                    <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill test
-                        data</button>
-                    <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
-                        for="debug_pr_target_fork_cb">Create PR in fork
-                    </label>
+                <div hidden="true">
+                    <img id="image-placeholder-for-size-computation" src="favicon.ico" />
                 </div>
             </div>
         </div>
         <div id="footer">
             <span id="footer-left">
-                <input type="checkbox" id="debug_mode_cb" v-model="debugMode" /><label for="debug_mode_cb">Debug
-                    Mode</label>
             </span>
             <span id="footer-right">
                 <a>Trust Wallet Assets App</a>

@@ -43,10 +43,14 @@ textarea {
 .margined {
   margin: 5px;
 }
+.center {
+  text-align: center;
+  margin: auto;
+}
 .padded {
   padding: 5px;
 }
-.tab-pane-twocol {
+.flexrow {
   margin: auto;
   display: flex;
   flex-direction: row;
