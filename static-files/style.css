@@ -9,7 +9,7 @@ h1 {
 button {
   color: white;
   background-color: #38659e;
-  font-size: 110%;
+  font-size: 105%;
   border: none;
   padding: 8px 16px;
   text-align: center;
@@ -33,21 +33,82 @@ textarea {
 }
 #main {
   background-color: #e0e6ee;
+  min-height: 400;
+  display: flex;
+  flex-direction: column;
+}
+.tab-pane {
+  margin: auto;
+}
+.margined {
+  margin: 5px;
+}
+.center {
+  text-align: center;
+  margin: auto;
+}
+.padded {
+  padding: 5px;
+}
+.flexrow {
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+}
+#header {
+  margin: 5px;
 }
 #header a {
   text-decoration: none;
   color: #38659e;
 }
-#menu a {
-  padding: 8px;
-}
-#menu a:hover {
-  background-color: #e0e6ee;
+#menu-left a {
+  padded: 8px;
 }
 #menu-right {
   text-align: right;
   float: right;
 }
-#logo-preview img {
-  border-radius: 48%;
+#pulls-list {
+  width: 400px;
+}
+.selection-list {
+  overflow: auto;
+  background-color: white;
+}
+#pulls-list-list {
+  min-height: 100px;
+  max-height: 450px;
+}
+#pull-content-list {
+  min-height: 100px;
+  max-height: 200px;
+}
+#token-view {
+  width: 400px;
+}
+#search {
+  width: 400px;
+}
+#token-search-list {
+  min-height: 100px;
+  max-height: 400px;
+}
+#footer-right {
+  text-align: right;
+  float: right;
+}
+.input_label_td {
+  vertical-align: top;
+  padding: 5px;
+}
+.selection-item {
+  padding: 5px;
+  background-color: white;
+}
+.selection-item:hover {
+  background-color: #cbd7e8;
+}
+.selected-item {
+  background-color: #e0e6ee;
 }

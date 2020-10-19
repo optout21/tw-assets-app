@@ -10,7 +10,7 @@ import { isEthereumAddress, toChecksum } from "./eth-address";
 /// Class for entering input for a token
 export class TokenInput {
     name: string = "";
-    type: string = "";
+    type: string = "erc20";
     contract: string = "";
     // base64-encoded logo image stream
     logoStream: string = "";
