@@ -9,7 +9,7 @@ h1 {
 button {
   color: white;
   background-color: #38659e;
-  font-size: 110%;
+  font-size: 105%;
   border: none;
   padding: 8px 16px;
   text-align: center;
@@ -40,6 +40,20 @@ textarea {
 .tab-pane {
   margin: auto;
 }
+.margined {
+  margin: 5px;
+}
+.padded {
+  padding: 5px;
+}
+.tab-pane-twocol {
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+}
+#header {
+  margin: 5px;
+}
 #header a {
   text-decoration: none;
   color: #38659e;
@@ -54,9 +68,6 @@ textarea {
   text-align: right;
   float: right;
 }
-#logo-preview img {
-  border-radius: 48%;
-}
 #footer-right {
   text-align: right;
   float: right;
@@ -64,4 +75,11 @@ textarea {
 .input_label_td {
   vertical-align: top;
   padding: 5px;
+}
+.selection-item {
+  padding: 5px;
+  background-color: white;
+}
+.selection-item:hover {
+  background-color: #e0e6ee;
 }

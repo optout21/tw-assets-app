@@ -362,6 +362,27 @@
         myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
     }
 
+    async function getPulls(userToken, owner, repo) {
+        const result = await script.octoRequest("GET /repos/:owner/:repo/pulls", {
+            headers: authHeaders(userToken),
+            owner: owner,
+            repo: repo
+        });
+        return result.data;
+    }
+
+    async function getPrFiles(userToken, prNum) {
+        const url = `https://api.github.com/repos/${mainRepoFullName}/pulls/${prNum}/files`;
+        let resp = await fetch(url, { headers: authHeaders(userToken) });
+        if (resp.status != 200) {
+            myAlert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
+            return [];
+        }
+        const respJson = await resp.json();
+        const files = respJson.map(e => e.filename);
+        return files;
+    }
+
     function start() {
         // Preview for a single logo, supports url and stream, rounded mask, dimming
         Vue.component('logo-single-preview', {
@@ -389,7 +410,7 @@
             data: function () {
                 return {}
             },
-            template: `<img :width="size" :height="size" v-bind:src="this.src" :style="style" />`
+            template: `<img :width="size" :height="size" :src="src" :style="style" />`
         });
 
         // Token text for preview
@@ -450,7 +471,7 @@
             props: {
                 logourl: String,
                 logostream: String,
-                tokenname: String
+                tokenname: String,
             },
             template:
                 `
@@ -465,6 +486,137 @@
                                 </td>
                             </tr>
                         </table>
+                    </div>
+                `
+        });
+
+        Vue.component('token-view', {
+            props: {
+                tokenInfo: Object
+            },
+            template: `
+                <div>
+                    <div class="margined">
+                        <h3>Token View</h3>
+                    </div>
+                    <div class="margined">
+                        contract: {{tokenInfo.contract}}
+                    </div>
+                    <div>
+                        <logo-preview :logourl="tokenInfo.logoUrl" :logostream="tokenInfo.logoStream" />
+                    </div>
+                </div>
+            `
+        });
+
+        Vue.component('pull-item', {
+            props: {
+                pull: Object,
+            },
+            methods: {
+                onclick: function () {
+                    this.$emit('select', this.pull);
+                }
+            },
+            template:
+                `
+                    <div class="pull-item selection-item" v-on:click="onclick"><strong>{{pull.number}}</strong> {{pull.title}}</div>
+                `
+        });
+
+        Vue.component('pull-content', {
+            props: {
+                pull: Object,
+                tokenIds: Array,
+            },
+            async updated() {
+                console.log("pull-content updated", this.tokenIds.length);
+                if (this.tokenIds && this.tokenIds.length >= 1) {
+                    this.$emit('select', this.tokenIds[0]);
+                }
+            },
+            methods: {
+                onclick: function (e) {
+                    const token = JSON.parse(e.target.attributes.token.value);
+                    this.$emit('select', token);
+                },
+            },
+            template:
+                `
+                    <div>
+                        <div class="padded">
+                            <div class="padded"><a :href="gitHub + '/' + mainRepoFullName + '/pull/' + pull.number" target="_blank" rel="noopener noreferrer"><strong>PR #{{pull.number}}</strong></a>: {{pull.title}}</div>
+                            <div class="padded">repo: <a :href="gitHub + '/'+ pull.owner + '/' + pull.repo" target="_blank" rel="noopener noreferrer">{{pull.owner}}/{{pull.repo}}</a>/{{pull.branch}}</div>
+                            <div class="padded">Detected token(s) in PR:</div>
+                        </div>
+                        <div class="padded">
+                            <div v-for="token in tokenIds" class="selection-item" v-on:click="onclick" :token="JSON.stringify(token)" :tokentype="token.type" :tokenid="token.id">{{token.type}}: {{token.id}}</div>
+                        </div>
+                    </div>
+                `
+        });
+
+        Vue.component('pulls-list', {
+            props: {
+                userToken: String,
+            },
+            data: function () {
+                return {
+                    pulls: Array,
+                    selected: Object,
+                    selectedPullTokenIds: Array,
+                }
+            },
+            async created() {
+                await this.loadOpenPrs();
+            },
+            methods: {
+                loadOpenPrs: async function () {
+                    if (!this.userToken) { this.pulls = []; return; }
+                    const rawPulls = await getPulls(this.userToken, mainRepoOwner, mainRepoName);
+                    this.pulls = rawPulls.map(p => ({
+                        number: p.number,
+                        title: p.title,
+                        owner: p.head.user ? p.head.user.login : '',
+                        repo: p.head.repo ? p.head.repo.name : '',
+                        branch: p.head.ref,
+                    }));
+                    if (this.pulls && this.pulls.length >= 1) {
+                        await this.onselectpull(this.pulls[0]);
+                    }
+                },
+                onselectpull: async function (pr) {
+                    this.selected = pr;
+                    //console.log(`select ${pr.number}: ${pr.owner}/${pr.repo}/${pr.branch}`);
+
+                    const files = await getPrFiles(this.userToken, pr.number);
+                    if (!files || files.length == 0) {
+                        myAlert(`Could not retrieve files from PR ${pr.number}`);
+                        return;
+                    }
+                    const ids = script.assets.tokenIdsFromFiles(files);
+                    if (!ids || ids.length == 0) {
+                        myAlert(`Could not retrieve tokens from PR ${pr.number}`);
+                        return;
+                    }
+                    this.selectedPullTokenIds = ids.map(i => ({ type: i[0], id: i[1], owner: pr.owner, repo: pr.repo, branch: pr.branch }));
+                },
+                onselecttoken: function (token) {
+                    console.log("onselectToken", JSON.stringify(token));
+                    this.$emit('selecttoken', token);
+                },
+            },
+            template:
+                `
+                    <div>
+                        <div class="padded">
+                            <button v-on:click="loadOpenPrs()">Search</button>
+                            <span>{{pulls.length}} PRs</span>
+                        </div>
+                        <div class="padded">
+                            <pull-item v-for="pull in pulls" :pull="pull" v-on:select="onselectpull"></pull-item>
+                        </div>
+                        <pull-content :pull="selected" :token-ids="selectedPullTokenIds" v-on:select="onselecttoken"></pull-content>
                     </div>
                 `
         });
@@ -487,14 +639,12 @@
                 inputLogoText: '',
                 debugMode: false,
                 debugTargetFork: false,
-                testLogoIndex: 0
+                testLogoIndex: 0,
+                tokenInfo: new script.assets.TokenInfo(),
             },
             methods: {
                 selectTab: async function (tab) {
                     this.activeTab = tab;
-                    if (this.activeTab == 'tab-prs') {
-                        loadOpenPrs();
-                    }
                 },
                 clearUser: function () {
                     this.userToken = null;
@@ -629,6 +779,11 @@
                     this.tokenInput.explorerUrl = `https://etherscan.io/token/${sampleEthContract}`;
                     await this.debugTestLogoGetNext();
                     await this.tokenInputChanged();
+                },
+                onPullSelectToken: async function (token) {
+                    console.log("onPullSelectToken", token);
+                    this.tokenInfo = await script.assets.tokenInfoOfExistingTokenInRepo(token.type, token.id,
+                        token.owner, token.repo, token.branch, true);
                 }
             }
         });
@@ -668,7 +823,7 @@
                     Please <a :href="loginActionUrl()">Log in</a>
                 </span>
                 <span v-show="userToken">
-                    <div>
+                    <div class="margined">
                         <h3>Add Token</h3>
                         Please fill in the token/project details
                     </div>
@@ -722,8 +877,7 @@
                                 <td>
                                     <div>
                                         <logo-preview :logostream="tokenInput.logoStream"
-                                            v-bind:tokenname="tokenInput.name" />
-                                        </logo-preview>
+                                            :tokenname="tokenInput.name" />
                                     </div>
                                 </td>
                             </tr>
@@ -770,31 +924,24 @@
                     </div>
                 </span>
             </div>
-            <div>
-                <table>
-                    <tr>
-                        <td>
-
-                            <div class="tab-pane" v-show="activeTab == 'tab-prs'">
-                                <div>
-                                    <h3>Pull Requests</h3>
-                                </div>
-                            </div>
-                            <div class="tab-pane" v-show="activeTab == 'tab-search'">
-                                <div>
-                                    <h3>Token Search</h3>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div v-show="activeTab != 'tab-add'">
-                                <div>
-                                    <h3>Token View</h3>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+            <div class="tab-pane" v-show="activeTab == 'tab-prs'">
+                <div class="margined">
+                    <h3>Pull Requests</h3>
+                </div>
+                <div class="tab-pane-twocol">
+                    <pulls-list :user-token="userToken" v-on:selecttoken="onPullSelectToken"></pulls-list>
+                    <token-view :token-info="tokenInfo"></token-view>
+                </div>
+            </div>
+            <div class="tab-pane tab-pane-twocol" v-show="activeTab == 'tab-search'">
+                <span>
+                    <div class="margined">
+                        <h3>Token Search</h3>
+                    </div>
+                    <div>
+                        TODO
+                    </div>
+                </span>
             </div>
             <div hidden="true">
                 <img id="image-placeholder-for-size-computation" src="favicon.ico" />
@@ -802,7 +949,8 @@
             <div v-show="debugMode">
                 <div>Debug Mode</div>
                 <div>
-                    <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill test data</button>
+                    <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill test
+                        data</button>
                     <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
                         for="debug_pr_target_fork_cb">Create PR in fork
                     </label>
