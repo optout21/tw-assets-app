@@ -494,17 +494,84 @@
             props: {
                 tokenInfo: Object
             },
+            computed: {
+                links: function() {
+                    if (!this.tokenInfo) { return ""; }
+                    let links = "";
+                    if (this.tokenInfo.logoUrl) {
+                        links += `<a href="${this.tokenInfo.logoUrl}" target="_blank">Logo</a> `;
+                    } else {
+                        links += "(logo) ";
+                    }
+                    if (this.tokenInfo.infoUrl) {
+                        links += `<a href="${this.tokenInfo.infoUrl}" target="_blank">Info</a> `;
+                    } else {
+                        links += "(info) ";
+                    }
+                    const explorer = this.tokenInfo.explorerUrl();
+                    if (explorer) {
+                        links += `<a href="${explorer}" target="_blank">Explorer</a> `;
+                    } else {
+                        links += "(explorer) ";
+                    }
+                    const website = this.tokenInfo.info["website"];
+                    if (website) {
+                        links += `<a href="${website}" target="_blank">Website</a> `;
+                    } else {
+                        links += "(website) ";
+                    }
+                    return links;
+                }
+            },
+            methods: {
+                checkInfoButton: async function() {
+                    addLog("starting TokenInfo check...");
+                    let [resnum, resmsg] = await script.assets.checkTokenInfo(this.tokenInfo, { get: getImageDimension });
+                    if (resnum >= 2) {
+                        myAlert("Check result: ERROR \n" + resmsg);
+                    } else if (resnum >= 1) {
+                        myAlert("Check result: Warning \n" + resmsg);
+                    } else {
+                        myAlert("Check OK: \n" + resmsg);
+                    }
+                },
+            },
             template: `
-                <div>
+                <div id="token-view">
                     <div class="margined">
                         <h3>Token View</h3>
                     </div>
-                    <div class="margined">
-                        contract: {{tokenInfo.contract}}
-                    </div>
-                    <div>
-                        <logo-preview :logourl="tokenInfo.logoUrl" :logostream="tokenInfo.logoStream" />
-                    </div>
+                    <table>
+                        <tr>
+                            <td>Type:</td>
+                            <td><strong>{{tokenInfo.type}}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Contract:</td>
+                            <td><strong>{{tokenInfo.contract}}</strong></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div>Logo Preview:</div>
+                                <logo-preview :logourl="tokenInfo.logoUrl" :logostream="tokenInfo.logoStream" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <textarea class="input" id="info.info" readonly="true" style="width: 100%;" rows="8">{{tokenInfo.infoString}}</textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                Links: <span v-html="links"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <button class="button" type="button" v-on:click="checkInfoButton">Check</button>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             `
         });
@@ -530,8 +597,10 @@
                 tokenIds: Array,
             },
             async updated() {
-                console.log("pull-content updated", this.tokenIds.length);
-                if (this.tokenIds && this.tokenIds.length >= 1) {
+                //console.log("pull-content updated", this.tokenIds.length);
+                if (!this.tokenIds || this.tokenIds.length == 0) {
+                    this.$emit('select', null);
+                } else if (this.tokenIds && this.tokenIds.length >= 1) {
                     this.$emit('select', this.tokenIds[0]);
                 }
             },
@@ -544,12 +613,12 @@
             template:
                 `
                     <div>
-                        <div class="padded">
-                            <div class="padded"><a :href="gitHub + '/' + mainRepoFullName + '/pull/' + pull.number" target="_blank" rel="noopener noreferrer"><strong>PR #{{pull.number}}</strong></a>: {{pull.title}}</div>
-                            <div class="padded">repo: <a :href="gitHub + '/'+ pull.owner + '/' + pull.repo" target="_blank" rel="noopener noreferrer">{{pull.owner}}/{{pull.repo}}</a>/{{pull.branch}}</div>
-                            <div class="padded">Detected token(s) in PR:</div>
+                        <div class="margined">
+                            <div class="margined"><a :href="gitHub + '/' + mainRepoFullName + '/pull/' + pull.number" target="_blank" rel="noopener noreferrer"><strong>PR #{{pull.number}}</strong></a>: {{pull.title}}</div>
+                            <div class="margined">repo: <a :href="gitHub + '/'+ pull.owner + '/' + pull.repo" target="_blank" rel="noopener noreferrer">{{pull.owner}}/{{pull.repo}}</a>/{{pull.branch}}</div>
+                            <div class="margined">Detected token(s) in PR:</div>
                         </div>
-                        <div class="padded">
+                        <div id="pull-content-list" class="selection-list margined ">
                             <div v-for="token in tokenIds" class="selection-item" v-on:click="onclick" :token="JSON.stringify(token)" :tokentype="token.type" :tokenid="token.id">{{token.type}}: {{token.id}}</div>
                         </div>
                     </div>
@@ -588,6 +657,8 @@
                 onselectpull: async function (pr) {
                     this.selected = pr;
                     //console.log(`select ${pr.number}: ${pr.owner}/${pr.repo}/${pr.branch}`);
+                    this.selectedPullTokenIds = [];
+                    this.$emit('selecttoken', new script.assets.TokenInfo());
 
                     const files = await getPrFiles(this.userToken, pr.number);
                     if (!files || files.length == 0) {
@@ -609,11 +680,11 @@
             template:
                 `
                     <div>
-                        <div class="padded">
+                        <div class="margined">
                             <button v-on:click="loadOpenPrs()">Search</button>
                             <span>{{pulls.length}} PRs</span>
                         </div>
-                        <div class="padded">
+                        <div id="pulls-list-list" class="selection-list margined">
                             <pull-item v-for="pull in pulls" :pull="pull" v-on:select="onselectpull"></pull-item>
                         </div>
                         <pull-content :pull="selected" :token-ids="selectedPullTokenIds" v-on:select="onselecttoken"></pull-content>
@@ -782,8 +853,12 @@
                 },
                 onPullSelectToken: async function (token) {
                     console.log("onPullSelectToken", token);
-                    this.tokenInfo = await script.assets.tokenInfoOfExistingTokenInRepo(token.type, token.id,
-                        token.owner, token.repo, token.branch, true);
+                    if (!token) {
+                        this.tokenInfo = new script.assets.TokenInfo();
+                    } else {
+                        this.tokenInfo = await script.assets.tokenInfoOfExistingTokenInRepo(token.type, token.id,
+                            token.owner, token.repo, token.branch, true);
+                    }
                 }
             }
         });
@@ -947,7 +1022,7 @@
                         </div>
                     </div>
                     <div id="tab-pulls" class="tab-pane flexrow" v-show="activeTab == 'tab-prs'">
-                        <div id="pulls.list">
+                        <div id="pulls-list">
                             <div class="margined">
                                 <h3>Pull Requests</h3>
                             </div>

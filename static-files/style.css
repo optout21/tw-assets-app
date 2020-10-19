@@ -72,6 +72,24 @@ textarea {
   text-align: right;
   float: right;
 }
+#pulls-list {
+  width: 400px;
+}
+.selection-list {
+  overflow: auto;
+  background-color: white;
+}
+#pulls-list-list {
+  min-height: 100px;
+  max-height: 450px;
+}
+#pull-content-list {
+  min-height: 100px;
+  max-height: 200px;
+}
+#token-view {
+  width: 400px;
+}
 #footer-right {
   text-align: right;
   float: right;
