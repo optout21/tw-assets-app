@@ -87,6 +87,13 @@ textarea {
 #token-view {
   width: 400px;
 }
+#search {
+  width: 400px;
+}
+#token-search-list {
+  min-height: 100px;
+  max-height: 400px;
+}
 #footer-right {
   text-align: right;
   float: right;

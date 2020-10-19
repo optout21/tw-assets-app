@@ -614,7 +614,6 @@
                 onclick: function (e) {
                     const token = JSON.parse(e.target.attributes.token.value);
                     this.selectedToken = token;
-                    console.log(this.tokenIds[0], this.selectedToken);
                     this.$emit('select', token);
                 },
             },
@@ -682,7 +681,6 @@
                     this.selectedPullTokenIds = ids.map(i => ({ type: i[0], id: i[1], owner: pr.owner, repo: pr.repo, branch: pr.branch }));
                 },
                 onselecttoken: function (token) {
-                    console.log("onselectToken", JSON.stringify(token));
                     this.$emit('selecttoken', token);
                 },
             },
@@ -698,6 +696,81 @@
                                 v-bind:class="{'selected-item': pull.number == selected.number}"></pull-item>
                         </div>
                         <pull-content :pull="selected" :token-ids="selectedPullTokenIds" v-on:select="onselecttoken"></pull-content>
+                    </div>
+                `
+        });
+
+        Vue.component('token-search-item', {
+            props: {
+                token: Object,
+            },
+            methods: {
+                onclick: function () {
+                    this.$emit('select', this.token);
+                }
+            },
+            computed: {
+                symbol: function() { return this.token.symbol.substring(0, 10); },
+                name: function() { return this.token.name.substring(0, 20); },
+                type: function() { return this.token.type.toLowerCase(); },
+            },
+            template:
+                `
+                    <div class="token-search-item selection-item" v-on:click="onclick">
+                        <strong>{{symbol}}</strong>
+                        {{name}}
+                        ({{type}})
+                    </div>
+                `
+        });
+
+        Vue.component('token-search', {
+            data: function () {
+                return {
+                    queryString: '',
+                    tokens: Array,
+                    selected: Object,
+                }
+            },
+            methods: {
+                searchButton: async function() {
+                    if (this.queryString.length < 2) {
+                        // too short, do not search
+                        return;
+                    }
+                    this.tokens = [];
+                    const coinTypes = "60,195,714,20000714"; // eth, tron, binance, bep20
+                    const url = `https://api.trustwallet.com/v2/tokens/list?networks=${coinTypes}&query=${this.queryString}`;
+                    let resp = await fetch(url);
+                    if (resp.status != 200) {
+                        myAlert(`Error from ${url}, status ${resp.status} ${resp.statusText}`);
+                        return;
+                    }
+                    const respJson = await resp.json();
+                    var h = '';
+                    if (respJson && respJson.docs) {
+                        this.tokens = respJson.docs.map(t => t);
+                    }
+                    if (this.tokens && this.tokens.length >= 1) {
+                        await this.onselecttoken(this.tokens[0]);
+                    }
+                },
+                onselecttoken: async function (token) {
+                    this.selected = token;
+                    this.$emit('selecttoken', this.selected);
+                },
+            },
+            template:
+                `
+                    <div id="token-search">
+                        <div class="margined">
+                            <input id="search-input" class="input" placeholder="TWT" v-on:change="searchButton" v-model="queryString">
+                            <button v-on:click="searchButton">Search</button>
+                        </div>
+                        <div id="token-search-list" class="selection-list margined">
+                            <token-search-item v-for="token in tokens" :token="token" v-on:select="onselecttoken"
+                                v-bind:class="{'selected-item': token && selected && token.address == selected.address}"></token-search-item>
+                        </div>
                     </div>
                 `
         });
@@ -862,14 +935,20 @@
                     await this.tokenInputChanged();
                 },
                 onPullSelectToken: async function (token) {
-                    console.log("onPullSelectToken", token);
                     if (!token) {
                         this.tokenInfo = new script.assets.TokenInfo();
                     } else {
                         this.tokenInfo = await script.assets.tokenInfoOfExistingTokenInRepo(token.type, token.id,
                             token.owner, token.repo, token.branch, true);
                     }
-                }
+                },
+                onSearchSelectToken: async function (token) {
+                    if (!token) {
+                        this.tokenInfo = new script.assets.TokenInfo();
+                    } else {
+                        this.tokenInfo = await script.assets.tokenInfoOfExistingToken(token.type, token.token_id, true);
+                    }
+                },
             }
         });
     }
@@ -1041,14 +1120,13 @@
                         <token-view :token-info="tokenInfo"></token-view>
                     </div>
                     <div id="tab-search" class="tab-pane flexrow" v-show="activeTab == 'tab-search'">
-                        <div>
+                        <div id="search">
                             <div class="margined">
                                 <h3>Token Search</h3>
                             </div>
-                            <div>
-                                TODO
-                            </div>
+                            <token-search v-on:selecttoken="onSearchSelectToken"></token-search>
                         </div>
+                        <token-view :token-info="tokenInfo"></token-view>
                     </div>
                 </div>
                 <div hidden="true">
