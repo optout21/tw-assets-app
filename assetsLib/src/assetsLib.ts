@@ -6,7 +6,8 @@ export {
     chainFromType,
     explorerUrl,
     checkTokenInfo,
-    ImageDimensionsCalculator
+    ImageDimensionsCalculator,
+    getTokenCirculation
 } from "./tokenInfo";
 export {
     TokenInput,

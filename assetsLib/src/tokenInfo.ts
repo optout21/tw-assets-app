@@ -91,6 +91,7 @@ export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract
     const chain = chainFromType(tokenType);
     ti.logoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/blockchains/${chain}/assets/${ti.contract}/logo.png`;
     ti.infoUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/blockchains/${chain}/assets/${ti.contract}/info.json`;
+    
     if (fetchInfoJson) {
         // read info.json
         ti.infoString = "";
@@ -104,6 +105,7 @@ export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract
             }
         }
     }
+
     return ti;
 }
 
@@ -305,6 +307,7 @@ export async function getTokenCirculation(tokenType: string, explorer: string, t
                 return "";
             }
         }
+        //console.log("explorerUrl2", explorerUrl2);
         // erc20
         const httpResult = await fetch(explorerUrl2);
         if (httpResult.status != 200) {

@@ -494,6 +494,14 @@
             props: {
                 tokenInfo: Object
             },
+            data: function() {
+                return {
+                    circulationHolders: '',
+                }
+            },
+            updated: async function() {
+                this.circulationHolders = await script.assets.getTokenCirculation(this.tokenInfo.type, this.tokenInfo.info['explorer'], this.tokenInfo.contract);
+            },
             computed: {
                 links: function() {
                     if (!this.tokenInfo) { return ""; }
@@ -565,6 +573,10 @@
                             <td colspan="2">
                                 Links: <span v-html="links"></span>
                             </td>
+                        </tr>
+                        <tr>
+                            <td>Circulation (holders):</td>
+                            <td>{{circulationHolders}}</td>
                         </tr>
                         <tr>
                             <td colspan="2">
