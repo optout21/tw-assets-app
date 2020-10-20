@@ -75,6 +75,9 @@ textarea {
 .selection-list {
   overflow: auto;
   background-color: white;
+  border-style: solid;
+  border-width: 2px;
+  border-color: white;
 }
 #pulls-list-list {
   min-height: 100px;
