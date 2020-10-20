@@ -24,6 +24,14 @@ if (!clientSecret) { console.log("Missing CLIENT_SECRET!"); }
 
 var access_token = null;
 
+const packageJson = require('./package.json');
+const version = packageJson.version;
+
+function retrieveVersion(request, response) {
+    response.writeHead(200, { 'Content-Type': 'text/plain' });
+    response.end(version);
+}
+
 async function handleCallback(request, response) {
     console.log(`Callback url ${request.url}`);
     const queryObject = url.parse(request.url, true).query;
@@ -68,7 +76,9 @@ var serve = serveStatic("./static-files");
 var httpServer = http.createServer(async function (req, res) {
     try {
         console.log(`req.url ${req.url}`)
-        if (req.url === "/callback" || req.url.startsWith("/callback?")) {
+        if (req.url === "/get-version") {
+            retrieveVersion(req, res);
+        } else if (req.url === "/callback" || req.url.startsWith("/callback?")) {
             handleCallback(req, res);
             return;
         }
