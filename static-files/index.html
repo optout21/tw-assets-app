@@ -427,7 +427,7 @@
                         <td style="padding: 5;">
                             <logo-single-preview :size="32" :logourl="logourl" :logostream="logostream" :dimmed="dimmed" :rounded="true" />
                         </td>
-                        <td style="align: right; width: 100px;">
+                        <td class="wide" style="align: right;">
                             <span style="vertical-align: center; font-size: 70%;">{{name ? name : '(Token)'}}</span>
                         </td>
                     </tr>
@@ -566,7 +566,7 @@
                         </tr>
                         <tr>
                             <td colspan="2">
-                                <textarea class="input" id="info.info" readonly="true" style="width: 100%;" rows="8">{{tokenInfo.infoString}}</textarea>
+                                <textarea class="input wide" id="info.info" readonly="true" rows="8">{{tokenInfo.infoString}}</textarea>
                             </td>
                         </tr>
                         <tr>
@@ -1000,24 +1000,36 @@
                 </div>
                 <div id="main2" v-show="userToken">
                     <div id="tab-add" class="tab-pane flexrow" v-show="activeTab == 'tab-add'">
-                        <div>
+                        <div id="add-input">
                             <div class="margined">
                                 <h3>Add Token</h3>
-                                Please fill in the token/project details
+                                <div id="add-explanation" class="smallfont margined">
+                                    <div>
+                                        See guide on
+                                        <a href="https://community.trustwallet.com/t/how-to-submit-a-token-logo/3863" target="_blank">community</a> and
+                                        <a href="https://developer.trustwallet.com/add_new_asset" target="_blank">developer</a> sites.
+                                    </div>
+                                    <div>
+                                        Fill in the token/project details.
+                                        If all is OK, a new 
+                                        <a href="https://docs.github.com/en/free-pro-team@latest/desktop/contributing-and-collaborating-using-github-desktop/creating-an-issue-or-pull-request" target="_blank">pull request</a> will be created in your name,
+                                        against the <a href="https://github.com/trustwallet/assets/" target="_blank">assets repo</a>.
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <table>
                                     <tr>
                                         <td class="input_label_td">Name:</td>
                                         <td>
-                                            <input v-model="tokenInput.name" class="input" placeholder="Token Name"
-                                                size="20" v-on:change="tokenInputChanged()" />
+                                            <input v-model="tokenInput.name" class="input wide" placeholder="Token Name"
+                                                v-on:change="tokenInputChanged()" />
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="input_label_td">Type:</td>
                                         <td>
-                                            <select v-model="tokenInput.type" class="input"
+                                            <select v-model="tokenInput.type" class="input wide"
                                                 v-on:change="tokenInputChanged()">
                                                 <option value="erc20">ERC20 (Ethereum)</option>
                                                 <option value="bep2">BEP2 (Binance)</option>
@@ -1078,15 +1090,15 @@
                                     </tr>
                                     <tr>
                                         <td class="input_label_td">Short description:</td>
-                                        <td><textarea v-model="tokenInput.description" class="input"
-                                                placeholder="Short description of the project" style="width: 100%;"
+                                        <td><textarea v-model="tokenInput.description" class="input wide"
+                                                placeholder="Short description of the project"
                                                 rows="2" v-on:change="tokenInputChanged()"></textarea>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="input_label_td">Check result:</td>
-                                        <td><textarea v-model="tokenInputCheckResult" class="input"
-                                                style="width: 100%;" rows="3"></textarea>
+                                        <td><textarea v-model="tokenInputCheckResult" class="input wide"
+                                                rows="3"></textarea>
                                         </td>
                                     </tr>
                                     <tr>

@@ -69,6 +69,15 @@ textarea {
   text-align: right;
   float: right;
 }
+#add-input {
+  width: 400px;
+}
+.smallfont {
+  font-size: 90%;
+}
+.wide {
+  width: 100%;
+}
 #pulls-list {
   width: 400px;
 }
