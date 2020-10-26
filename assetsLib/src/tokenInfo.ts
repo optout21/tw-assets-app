@@ -294,47 +294,55 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
 }
 
 export async function getTokenCirculation(tokenType: string, explorer: string, tokenAddress: string) {
-    try {
-        if (tokenType.toLowerCase() != 'erc20') {
-            // not erc20, not supported
-            return "";
+    try
+    {
+        switch (tokenType.toLowerCase()) {
+            case 'erc20':
+            case 'bep20':
+                return await getTokenCirculationEth(tokenType, explorer, tokenAddress);
+            default:
+                // not supported
+                return '';
         }
-        let explorerUrl2 = explorer;
-        if (!explorerUrl2) {
-            // if no explorerUrl, use default
-            explorerUrl2 = explorerUrl(tokenType, tokenAddress);
-            if (!explorerUrl2) {
-                return "";
-            }
-        }
-        //console.log("explorerUrl2", explorerUrl2);
-        // erc20
-        const httpResult = await fetch(explorerUrl2);
-        if (httpResult.status != 200) {
-            return "";
-        }
-        const fragment2 = " addresses</div>";
-        const fragment1 = 'col-md-8">\n';
-        const resultPage = await httpResult.text();
-        const idx2 = resultPage.indexOf(fragment2);
-        if (idx2 < 30) {
-            //console.log("ERROR: framgment2 not found", "etherscanPage", etherscanPage.length, "etherscanUrl", etherscanUrl);
-            return "";
-        }
-        const idx1 = resultPage.substring(idx2 - 30).indexOf(fragment1);
-        //console.log("idx1", idx1);
-        if (idx1 < 0) {
-            //console.log("ERROR: framgment1 not found");
-            return "";
-        }
-        let holdersString = resultPage.substring(idx2 - 30 + idx1 + fragment1.length, idx2);
-        // remove any , or .
-        holdersString = holdersString.replace(',', '').replace('.', '');
-        //console.log(explorerUrl2, holdersString);
-        return holdersString;
     } catch (error) {
+        return '';
+    }
+}
+
+async function getTokenCirculationEth(tokenType: string, explorer: string, tokenAddress: string) {
+    let explorerUrl2 = explorer;
+    if (!explorerUrl2) {
+        // if no explorerUrl, use default
+        explorerUrl2 = explorerUrl(tokenType, tokenAddress);
+        if (!explorerUrl2) {
+            return "";
+        }
+    }
+    //console.log("explorerUrl2", explorerUrl2);
+    // erc20
+    const httpResult = await fetch(explorerUrl2);
+    if (httpResult.status != 200) {
         return "";
     }
+    const fragment2 = " addresses</div>";
+    const fragment1 = 'col-md-8">\n';
+    const resultPage = await httpResult.text();
+    const idx2 = resultPage.indexOf(fragment2);
+    if (idx2 < 30) {
+        //console.log("ERROR: framgment2 not found", "etherscanPage", etherscanPage.length, "etherscanUrl", etherscanUrl);
+        return "";
+    }
+    const idx1 = resultPage.substring(idx2 - 30).indexOf(fragment1);
+    //console.log("idx1", idx1);
+    if (idx1 < 0) {
+        //console.log("ERROR: framgment1 not found");
+        return "";
+    }
+    let holdersString = resultPage.substring(idx2 - 30 + idx1 + fragment1.length, idx2);
+    // remove any , or .
+    holdersString = holdersString.replace(',', '').replace('.', '');
+    //console.log(explorerUrl2, holdersString);
+    return holdersString;
 }
 
 const CirculationHoldersLimit = 500;
