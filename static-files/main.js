@@ -572,6 +572,25 @@ function start() {
         `
     });
 
+    Vue.component('pull-label-item', {
+        props: {
+            label: Object,
+        },
+        computed: {
+            initials: function() {
+                const words = this.label.name.split(' ');
+                inits = words.map(w => w[0]).join('');
+                return inits.substring(0, 3);
+            },
+        },
+        template: 
+            `
+                <span class="pull-label-small" v-bind:style="{ backgroundColor: label.color }"
+                    v-bind:title="label.name">{{initials}}
+                </span>
+            `
+        });
+
     Vue.component('pull-item', {
         props: {
             pull: Object,
@@ -579,11 +598,24 @@ function start() {
         methods: {
             onclick: function () {
                 this.$emit('select', this.pull);
+            },
+        },
+        computed: {
+            shortTitle: function() {
+                const maxlen = 25;
+                if (this.pull.title.length <= maxlen) {
+                    return this.pull.title;
+                }
+                return this.pull.title.substring(0, maxlen-1) + '...';
             }
         },
         template:
             `
-                <div class="pull-item selection-item" v-on:click="onclick"><strong>{{pull.number}}</strong> {{pull.title}}</div>
+                <div class="pull-item selection-item" v-on:click="onclick">
+                    <strong>{{pull.number}}</strong>
+                    <span v-bind:title="pull.title">{{shortTitle}}</span>
+                    <pull-label-item v-for="label in pull.labels" :label="label"></pull-label-item>
+                </div>
             `
     });
 
@@ -660,6 +692,7 @@ function start() {
                     owner: p.head.user ? p.head.user.login : '',
                     repo: p.head.repo ? p.head.repo.name : '',
                     branch: p.head.ref,
+                    labels: p.labels.map(l => ({name: l.name, color: l.color})),
                 }));
                 if (this.pulls && this.pulls.length >= 1) {
                     await this.onselectpull(this.pulls[0]);

@@ -127,3 +127,12 @@ textarea {
 .tab-select {
   padding: 8px;
 }
+.pull-label-small {
+  margin: 2px;
+  padding: 2px;
+  border-radius: 5px;
+  font-size: 80%;
+  border: solid;
+  border-width: 1px;
+  border-color: gray;
+}
