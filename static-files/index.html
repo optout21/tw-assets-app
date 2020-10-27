@@ -17,13 +17,17 @@
 
 <body onload="start()">
     <span id="app">
-        <div id="header">
-            <span id="menu-left">
-                <a class="selection-item" v-on:click="selectTab('tab-add')" v-bind:class="{'selected-item': activeTab == 'tab-add'}">Add New Token</a>
-                <a class="selection-item" v-on:click="selectTab('tab-prs')" v-bind:class="{'selected-item': activeTab == 'tab-prs'}">Pull Requests</a>
-                <a class="selection-item" v-on:click="selectTab('tab-search')" v-bind:class="{'selected-item': activeTab == 'tab-search'}">Token Search</a>
+        <div id="header" class="flexrow">
+            <span id="menu-left" class="flexrow">
+                <span class="tab-select selection-item" v-on:click="selectTab('tab-add')"
+                    v-bind:class="{'selected-item': activeTab == 'tab-add'}">Add New Token</span>
+                <span class="tab-select selection-item" v-on:click="selectTab('tab-prs')"
+                    v-bind:class="{'selected-item': activeTab == 'tab-prs'}">Pull Requests</span>
+                <span class="tab-select selection-item" v-on:click="selectTab('tab-search')"
+                    v-bind:class="{'selected-item': activeTab == 'tab-search'}">Token Search</span>
+                </span>
             </span>
-            <span id="menu-right">
+            <span id="menu-right" class="padded">
                 <span v-show="userToken == null">
                     <a :href="loginActionUrl()">Log in</a>
                 </span>
@@ -55,14 +59,18 @@
                                 <div id="add-explanation" class="smallfont margined">
                                     <div>
                                         See guide on
-                                        <a href="https://community.trustwallet.com/t/how-to-submit-a-token-logo/3863" target="_blank">community</a> and
-                                        <a href="https://developer.trustwallet.com/add_new_asset" target="_blank">developer</a> sites.
+                                        <a href="https://community.trustwallet.com/t/how-to-submit-a-token-logo/3863"
+                                            target="_blank">community</a> and
+                                        <a href="https://developer.trustwallet.com/add_new_asset"
+                                            target="_blank">developer</a> sites.
                                     </div>
                                     <div>
                                         Fill in the token/project details.
-                                        If all is OK, a new 
-                                        <a href="https://docs.github.com/en/free-pro-team@latest/desktop/contributing-and-collaborating-using-github-desktop/creating-an-issue-or-pull-request" target="_blank">pull request</a> will be created in your name,
-                                        against the <a href="https://github.com/trustwallet/assets/" target="_blank">assets repo</a>.
+                                        If all is OK, a new
+                                        <a href="https://docs.github.com/en/free-pro-team@latest/desktop/contributing-and-collaborating-using-github-desktop/creating-an-issue-or-pull-request"
+                                            target="_blank">pull request</a> will be created in your name,
+                                        against the <a href="https://github.com/trustwallet/assets/"
+                                            target="_blank">assets repo</a>.
                                     </div>
                                 </div>
                             </div>
@@ -140,8 +148,8 @@
                                     <tr>
                                         <td class="input_label_td">Short description:</td>
                                         <td><textarea v-model="tokenInput.description" class="input wide"
-                                                placeholder="Short description of the project"
-                                                rows="2" v-on:change="tokenInputChanged()"></textarea>
+                                                placeholder="Short description of the project" rows="2"
+                                                v-on:change="tokenInputChanged()"></textarea>
                                         </td>
                                     </tr>
                                     <tr>
@@ -153,8 +161,7 @@
                                     <tr>
                                         <td></td>
                                         <td>
-                                            <button class="button" type="button"
-                                                v-on:click="createPullButton()">Create
+                                            <button class="button" type="button" v-on:click="createPullButton()">Create
                                                 PR</button>
                                             <button class="button" type="button"
                                                 v-on:click="checkInputButton()">Check/Fix</button>
@@ -176,8 +183,8 @@
                                 <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill
                                     test
                                     data</button>
-                                <input type="checkbox" id="debug_pr_target_fork_cb"
-                                    v-model="debugTargetFork" /><label for="debug_pr_target_fork_cb">Create PR in
+                                <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
+                                    for="debug_pr_target_fork_cb">Create PR in
                                     fork
                                 </label>
                             </div>

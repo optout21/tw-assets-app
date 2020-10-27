@@ -6,6 +6,13 @@ body {
 h1 {
   color: #38659e;
 }
+a {
+  text-decoration: none;
+  color: #38659e;
+}
+a:hover {
+  text-decoration: underline;
+}
 button {
   color: white;
   background-color: #38659e;
@@ -19,12 +26,12 @@ button {
 .input {
   font-size: 105%;
   border: 1;
-  padding: 3px 3px;
+  padding: 3px;
 }
 textarea {
   font-family: sans-serif;
   border: 1;
-  padding: 3px 3px;
+  padding: 3px;
 }
 .textarea-small {
   color: gray;
@@ -51,19 +58,12 @@ textarea {
   padding: 5px;
 }
 .flexrow {
-  margin: auto;
   display: flex;
   flex-direction: row;
 }
 #header {
-  margin: 5px;
-}
-#header a {
-  text-decoration: none;
+  justify-content: space-between;
   color: #38659e;
-}
-#menu-left a {
-  padded: 8px;
 }
 #menu-right {
   text-align: right;
@@ -123,4 +123,7 @@ textarea {
 }
 .selected-item {
   background-color: #e0e6ee;
+}
+.tab-select {
+  padding: 8px;
 }
