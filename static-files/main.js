@@ -146,10 +146,6 @@ function arrayBufferToBase64(buffer) {
     return window.btoa(binary);
 }
 
-function createPullError(message) {
-    myAlert("PR creation error: " + message);
-}
-
 function newBranchName() {
     const today = new Date();
     const date = (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0') +
@@ -261,93 +257,6 @@ async function createPull(userToken, loginName, repo, branchName, tokenName, tok
         draft: false
     });
     return result.data.number;
-}
-
-async function createBranchAndPull(userToken, loginName, repo, tokenInput, debugPrTargetFork) {
-    if (!loginName) {
-        createPullError("Log in first!");
-        return;
-    }
-    if (!repo) {
-        createPullError("Create a fork of the assets repo first!");
-        return;
-    }
-    if (!tokenInput.contract || !tokenInput.name || !tokenInput.type || !tokenInput.logoStream) {
-        createPullError("Fill in all the fields!");
-        return;
-    }
-    tokenInfo = tokenInput.toTokenInfo();
-    if (!tokenInfo) {
-        createPullError("TokenInput error");
-        return;
-    }
-
-    const branchName = newBranchName();
-
-    addLog(`name: ${tokenInput.name}  type: ${tokenInput.type}  contract: ${tokenInput.contract}  branch ${branchName}`);
-
-    const branchRef = await createBranch(userToken, loginName, repo, branchName);
-    if (!branchRef) {
-        createPullError(`Could not create branch ${branchName}`);
-        return;
-    }
-    addLog(`Created branch ${loginName}/${repo}/${branchName}`);
-
-    let stream = null;
-    if (tokenInput.logoStream && tokenInput.logoStream.length > 10) {
-        // stream is there, use that
-        stream = tokenInput.logoStream;
-    }
-    if (!stream) {
-        createPullError(`Could not retrieve logo contents`);
-        return;
-    }
-
-    const chain = script.assets.chainFromType(tokenInput.type);
-    if (!chain || chain == "unknown") {
-        createPullError(`Could not retrieve chain from token type ${tokenInput.type}`);
-        return;
-    }
-
-    const fileInfos = await createFiles(userToken, loginName, repo, `blockchains/${chain}/assets`, tokenInput.contract, stream, tokenInfo.infoString);
-    if (!fileInfos || fileInfos.length == 0) {
-        createPullError(`Could not create files`);
-        return;
-    }
-    addLog(`Created ${fileInfos.length} new files`);
-
-    const branchSha = await getBranchRef(userToken, loginName, repo, branchName);
-    if (!branchSha) {
-        createPullError(`Could not get ref for branch ${branchName}`);
-        return;
-    }
-
-    const tree = await createTree(userToken, loginName, repo, branchSha, fileInfos);
-    if (!tree) {
-        createPullError(`Could not create tree with files`);
-        return;
-    }
-
-    const commit = await createCommit(userToken, loginName, repo, branchSha, tree, tokenInput.name);
-    if (!commit) {
-        createPullError(`Could not create commit`);
-        return;
-    }
-    addLog(`Created new commit ${commit}`);
-
-    const newBranchSha = await updateReference(userToken, loginName, repo, "heads/" + branchName, commit);
-    if (!newBranchSha) {
-        createPullError(`Could not update branch ${branchName} to commit ${commit}`);
-        return;
-    }
-
-    const pullNumber = await createPull(userToken, loginName, repo, branchName, tokenInput.name, tokenInput.type, debugPrTargetFork);  // true for debug
-    if (!pullNumber) {
-        createPullError(`Could not create PR`);
-        return;
-    }
-    const pullUrl = `${gitHub}/${loginName}/${repo}/pull/${pullNumber}`;
-    myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
 }
 
 async function getPulls(userToken, owner, repo) {
@@ -831,6 +740,7 @@ function start() {
                 testLogoIndex: 0,
                 tokenInfo: new script.assets.TokenInfo(),
                 checkButtonText: '',
+                prButtonText: '',
             }
         },
         async created() {
@@ -945,12 +855,109 @@ function start() {
                     }
                 }
             },
+            createPullError: async function (message) {
+                myAlert("PR creation error: " + message);
+                this.prButtonText = '';
+            },
+            createBranchAndPull: async function() {
+                if (!this.loginName) {
+                    createPullError("Log in first!");
+                    return;
+                }
+                if (!this.repo) {
+                    createPullError("Create a fork of the assets repo first!");
+                    return;
+                }
+                if (!this.tokenInput.contract || !this.tokenInput.name || !this.tokenInput.type || !this.tokenInput.logoStream) {
+                    createPullError("Fill in all the fields!");
+                    return;
+                }
+                this.tokenInfo = this.tokenInput.toTokenInfo();
+                if (!this.tokenInfo) {
+                    createPullError("TokenInput error");
+                    return;
+                }
+            
+                this.prButtonText = "creating PR ...";
+
+                const branchName = newBranchName();
+            
+                addLog(`name: ${this.tokenInput.name}  type: ${this.tokenInput.type}  contract: ${this.tokenInput.contract}  branch ${branchName}`);
+            
+                this.prButtonText = "creating branch ...";
+                const branchRef = await createBranch(this.userToken, this.loginName, this.repo, branchName);
+                if (!branchRef) {
+                    createPullError(`Could not create branch ${branchName}`);
+                    return;
+                }
+                addLog(`Created branch ${this.loginName}/${this.repo}/${branchName}`);
+            
+                let stream = null;
+                if (this.tokenInput.logoStream && this.tokenInput.logoStream.length > 10) {
+                    // stream is there, use that
+                    stream = this.tokenInput.logoStream;
+                }
+                if (!stream) {
+                    createPullError(`Could not retrieve logo contents`);
+                    return;
+                }
+            
+                const chain = script.assets.chainFromType(this.tokenInput.type);
+                if (!chain || chain == "unknown") {
+                    createPullError(`Could not retrieve chain from token type ${this.tokenInput.type}`);
+                    return;
+                }
+            
+                this.prButtonText = "creatinging files ...";
+                const fileInfos = await createFiles(this.userToken, this.loginName, this.repo, `blockchains/${chain}/assets`, this.tokenInput.contract, stream, this.tokenInfo.infoString);
+                if (!fileInfos || fileInfos.length == 0) {
+                    createPullError(`Could not create files`);
+                    return;
+                }
+                addLog(`Created ${fileInfos.length} new files`);
+            
+                const branchSha = await getBranchRef(this.userToken, this.loginName, this.repo, branchName);
+                if (!branchSha) {
+                    createPullError(`Could not get ref for branch ${branchName}`);
+                    return;
+                }
+            
+                const tree = await createTree(this.userToken, this.loginName, this.repo, branchSha, fileInfos);
+                if (!tree) {
+                    createPullError(`Could not create tree with files`);
+                    return;
+                }
+            
+                this.prButtonText = "creating commit ...";
+                const commit = await createCommit(this.userToken, this.loginName, this.repo, branchSha, tree, this.tokenInput.name);
+                if (!commit) {
+                    createPullError(`Could not create commit`);
+                    return;
+                }
+                addLog(`Created new commit ${commit}`);
+            
+                const newBranchSha = await updateReference(this.userToken, this.loginName, this.repo, "heads/" + branchName, commit);
+                if (!newBranchSha) {
+                    createPullError(`Could not update branch ${branchName} to commit ${commit}`);
+                    return;
+                }
+            
+                this.prButtonText = "creating pull request ...";
+                const pullNumber = await createPull(this.userToken, this.loginName, this.repo, branchName, this.tokenInput.name, this.tokenInput.type, this.debugPrTargetFork);  // true for debug
+                if (!pullNumber) {
+                    createPullError(`Could not create PR`);
+                    return;
+                }
+                this.prButtonText = '';
+                const pullUrl = `${gitHub}/${this.loginName}/${this.repo}/pull/${pullNumber}`;
+                myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
+            },
             createPullButton: async function () {
                 checkResult = await this.checkInputButton();
                 if (checkResult != 0 && checkResult != 1) {
                     addLog("Not creating PR due to check errors");
                 } else {
-                    await createBranchAndPull(this.userToken, this.loginName, this.repo, this.tokenInput, this.debugTargetFork);
+                    await this.createBranchAndPull(this.userToken, this.loginName, this.repo, this.tokenInput, this.debugTargetFork);
                 }
             },
             debugTestLogoGetNext: async function () {
@@ -1044,10 +1051,13 @@ function start() {
                                             rows="3"></textarea>
                             </div>
                             <div>
-                                <button class="button" type="button" v-on:click="createPullButton()">Create
-                                    Pull Request</button>
+                                <button class="button" type="button" v-on:click="createPullButton()">
+                                    {{prButtonText ? prButtonText : 'Create Pull Request'}}
+                                </button>
                                 <button class="button" type="button"
-                                    v-on:click="checkInputButton()">{{checkButtonText ? checkButtonText : 'Check'}}</button>
+                                    v-on:click="checkInputButton()">
+                                    {{checkButtonText ? checkButtonText : 'Check'}}
+                                </button>
                                 <button class="button" type="button" v-show="debugMode"
                                     v-on:click="clearInput()">Clear</button>
                             </div>
