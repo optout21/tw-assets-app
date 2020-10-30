@@ -36,9 +36,13 @@ function loginActionUrl() {
     return `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
 }
 
-function getTokenQP() {
+function getQueryParam(param) {
     var urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("token");
+    return urlParams.get(param);
+}
+
+function getTokenQP() {
+    return getQueryParam("token");
 }
 
 async function getUser(userToken) {
@@ -811,44 +815,28 @@ function start() {
             `
     });
 
-    var app = new Vue({
-        el: '#app',
-        async created() {
-            this.clearInput();
-            this.userToken = getTokenQP();
-            this.loginName = await checkUser(this.userToken);
-            this.repo = await checkRepo(this.userToken, this.loginName);
-            const resp = await fetch("/get-version");
-            if (resp.status == 200) {
-                this.version = await resp.text();
+    Vue.component('main-add-token', {
+        props: {
+            userToken: String,
+            loginName: String,
+            repo: String,
+        },
+        data: function () {
+            return {
+                tokenInput: new script.assets.TokenInput(),
+                tokenInputCheckResult: '',
+                inputLogoText: '',
+                debugMode: false,
+                debugTargetFork: false,
+                testLogoIndex: 0,
+                tokenInfo: new script.assets.TokenInfo(),
             }
         },
-        data: {
-            userToken: null,
-            loginName: null,
-            repo: null,
-            version: '',
-            activeTab: 'tab-add',
-            tokenInput: new script.assets.TokenInput(),
-            tokenInputCheckResult: '',
-            inputLogoText: '',
-            debugMode: false,
-            debugTargetFork: false,
-            testLogoIndex: 0,
-            tokenInfo: new script.assets.TokenInfo(),
+        async created() {
+            this.clearInput();
+            this.debugMode = getQueryParam("debug");
         },
         methods: {
-            selectTab: async function (tab) {
-                this.activeTab = tab;
-            },
-            clearUser: function () {
-                this.userToken = null;
-                loginName = '';
-                this.clearInput();
-            },
-            logout: function () {
-                this.clearUser();
-            },
             clearInput: function () {
                 this.tokenInput = new script.assets.TokenInput();
                 this.inputLogoSetStream(null, null, 0, null);
@@ -975,6 +963,157 @@ function start() {
                 await this.debugTestLogoGetNext();
                 await this.tokenInputChanged();
             },
+        },
+        template:
+            `
+                <div class="tab-pane flexrow">
+                    <div id="add-input">
+                        <div class="margined">
+                            <h3>Add Token</h3>
+                            <div id="add-explanation" class="smallfont margined">
+                                <div>
+                                    See guide on
+                                    <a href="https://community.trustwallet.com/t/how-to-submit-a-token-logo/3863"
+                                        target="_blank">community</a> and
+                                    <a href="https://developer.trustwallet.com/add_new_asset"
+                                        target="_blank">developer</a> sites.
+                                </div>
+                                <div>
+                                    Fill in the token/project details.
+                                    If all is OK, a new
+                                    <a href="https://docs.github.com/en/free-pro-team@latest/desktop/contributing-and-collaborating-using-github-desktop/creating-an-issue-or-pull-request"
+                                        target="_blank">pull request</a> will be created in your name,
+                                    against the <a href="https://github.com/trustwallet/assets/"
+                                        target="_blank">assets repo</a>.
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <table>
+                                <tr>
+                                    <td class="input_label_td">Name:</td>
+                                    <td>
+                                        <input v-model="tokenInput.name" class="input wide" placeholder="Token Name"
+                                            v-on:change="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Type:</td>
+                                    <td>
+                                        <select v-model="tokenInput.type" class="input wide"
+                                            v-on:change="tokenInputChanged()">
+                                            <option value="erc20">ERC20 (Ethereum)</option>
+                                            <option value="bep2">BEP2 (Binance)</option>
+                                            <option value="bep20">BEP20 (Binance Smart Chain)</option>
+                                            <option value="trc10">TRC10 (Tron)</option>
+                                            <option value="trc20">TRC20 (Tron)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Contract/ID:</td>
+                                    <td>
+                                        <input v-model="tokenInput.contract" class="input"
+                                            placeholder="0xF784682C82526e245F50975190EF0fff4E4fC077" size="40"
+                                            v-on:change="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">
+                                        <div>Logo:</div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <button class="button"
+                                                onclick="document.getElementById('input.file-selector').click();">Upload</button>
+                                            <input id="input.file-selector" type="file" style="display: none;"
+                                                v-on:change="logoFileSelected()" />
+                                            <span v-html="inputLogoText" id="input.logo-input"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">
+                                        <div>Preview:</div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <logo-preview :logostream="tokenInput.logoStream"
+                                                :tokenname="tokenInput.name" />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Website:</td>
+                                    <td>
+                                        <input v-model="tokenInput.website" class="input"
+                                            placeholder="https://tokenproject.fi" size="40"
+                                            v-on:change="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Explorer:</td>
+                                    <td>
+                                        <input v-model="tokenInput.explorerUrl" class="input"
+                                            placeholder="https://etherscan.io/token/0xF784682C82526e245F50975190EF0fff4E4fC077"
+                                            size="40" v-on:change="tokenInputChanged()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Short description:</td>
+                                    <td><textarea v-model="tokenInput.description" class="input wide"
+                                            placeholder="Short description of the project" rows="2"
+                                            v-on:change="tokenInputChanged()"></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="input_label_td">Check result:</td>
+                                    <td><textarea v-model="tokenInputCheckResult" class="input wide"
+                                            rows="3"></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <button class="button" type="button" v-on:click="createPullButton()">Create
+                                            PR</button>
+                                        <button class="button" type="button"
+                                            v-on:click="checkInputButton()">Check/Fix</button>
+                                        <button class="button" type="button"
+                                            v-on:click="clearInput()">Clear</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div v-show="debugMode" id="add-debug-mode">
+                        <div>Debug Mode</div>
+                        <div>
+                            <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill
+                                test
+                                data</button>
+                            <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
+                                for="debug_pr_target_fork_cb">Create PR in
+                                fork
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `
+    });
+
+    Vue.component('main-pulls', {
+        props: {
+            userToken: String,
+            loginName: String,
+            repo: String,
+        },
+        data: function () {
+            return {
+                tokenInfo: new script.assets.TokenInfo(),
+            }
+        },
+        methods: {
             onPullSelectToken: async function (token) {
                 if (!token) {
                     this.tokenInfo = new script.assets.TokenInfo();
@@ -983,12 +1122,85 @@ function start() {
                         token.owner, token.repo, token.branch, true);
                 }
             },
+        },
+        template:
+            `
+                <div class="tab-pane flexrow">
+                    <div id="pulls-list">
+                        <div class="margined">
+                            <h3>Pull Requests</h3>
+                        </div>
+                        <pulls-list :user-token="userToken" v-on:selecttoken="onPullSelectToken"></pulls-list>
+                    </div>
+                    <token-view :token-info="tokenInfo"></token-view>
+                </div>
+            `
+    });
+
+    Vue.component('main-token-search', {
+        props: {
+            userToken: String,
+            loginName: String,
+            repo: String,
+        },
+        data: function () {
+            return {
+                tokenInfo: new script.assets.TokenInfo(),
+            }
+        },
+        methods: {
             onSearchSelectToken: async function (token) {
                 if (!token) {
                     this.tokenInfo = new script.assets.TokenInfo();
                 } else {
                     this.tokenInfo = await script.assets.tokenInfoOfExistingToken(token.type, token.token_id, true);
                 }
+            },
+        },
+        template:
+            `
+                <div class="tab-pane flexrow">
+                    <div id="search">
+                        <div class="margined">
+                            <h3>Token Search</h3>
+                        </div>
+                        <token-search v-on:selecttoken="onSearchSelectToken"></token-search>
+                    </div>
+                    <token-view :token-info="tokenInfo"></token-view>
+                </div>
+            `
+    });
+
+    var app = new Vue({
+        el: '#app',
+        async created() {
+            this.userToken = getTokenQP();
+            this.loginName = await checkUser(this.userToken);
+            this.repo = await checkRepo(this.userToken, this.loginName);
+            const resp = await fetch("/get-version");
+            if (resp.status == 200) {
+                this.version = await resp.text();
+            }
+            this.maintainerMode = getQueryParam("maintainer");
+        },
+        data: {
+            userToken: null,
+            loginName: null,
+            repo: null,
+            version: '',
+            activeTab: 'tab-add',
+            maintainerMode: false,
+        },
+        methods: {
+            selectTab: async function (tab) {
+                this.activeTab = tab;
+            },
+            clearUser: function () {
+                this.userToken = null;
+                loginName = '';
+            },
+            logout: function () {
+                this.clearUser();
             },
         }
     });
