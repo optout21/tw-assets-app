@@ -51,10 +51,10 @@
                 </div>
                 <div id="main-ifuserrepo" v-show="userToken && repo">
                     <main-pulls id="tab-pulls" :user-token="userToken" :login-name="loginName" :repo="repo"
-                        v-show="activeTab == 'tab-prs'">
+                        :enabled="maintainerMode" v-show="maintainerMode && activeTab == 'tab-prs'">
                     </main-pulls>
                     <main-token-search id="tab-search" :user-token="userToken" :login-name="loginName" :repo="repo"
-                        v-show="activeTab == 'tab-search'">
+                        v-show="maintainerMode && activeTab == 'tab-search'">
                     </main-token-search>
                     <main-add-token id="tab-add" :user-token="userToken" :login-name="loginName" :repo="repo"
                         v-show="activeTab == 'tab-add'">

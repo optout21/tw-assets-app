@@ -584,6 +584,7 @@ function start() {
     Vue.component('pulls-list', {
         props: {
             userToken: String,
+            enabled: String,
         },
         data: function () {
             return {
@@ -593,7 +594,9 @@ function start() {
             }
         },
         async created() {
-            await this.loadOpenPrs();
+            if (this.enabled) {
+                await this.loadOpenPrs();
+            }
         },
         methods: {
             loadOpenPrs: async function () {
@@ -1084,6 +1087,7 @@ function start() {
             userToken: String,
             loginName: String,
             repo: String,
+            enabled: String,
         },
         data: function () {
             return {
@@ -1105,7 +1109,7 @@ function start() {
                 <div class="tab-pane flexrow">
                     <div id="pulls-list">
                         <div class="mainheader">Pull Requests</div>
-                        <pulls-list :user-token="userToken" v-on:selecttoken="onPullSelectToken"></pulls-list>
+                        <pulls-list :user-token="userToken" :enabled="enabled" v-on:selecttoken="onPullSelectToken"></pulls-list>
                     </div>
                     <token-view :token-info="tokenInfo"></token-view>
                 </div>
