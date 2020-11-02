@@ -10,7 +10,7 @@ npm install && cd assetsLib && npm install && cd ..
 ```
 
 ```shell
-npm build
+npm run build
 ```
 
 ```shell
