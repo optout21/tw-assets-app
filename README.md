@@ -6,7 +6,7 @@ Github App to help adding new tokens and managing the Trust Wallet assets reposi
 You need to create a `.env` file, from `.env.example`, setting the app clientId and clientSecret.
 
 ```shell
-npm install && cd assetsLib && npm install && cd ..
+npm install
 ```
 
 ```shell
