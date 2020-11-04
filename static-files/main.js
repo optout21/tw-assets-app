@@ -594,7 +594,9 @@ function start() {
             }
         },
         async created() {
-            if (this.enabled) {
+            // enabled is set delayed, check queryparam here directly
+            maintainerMode = getQueryParam("maintainer");
+            if (this.enabled || maintainerMode) {
                 await this.loadOpenPrs();
             }
         },
