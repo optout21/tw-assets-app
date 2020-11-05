@@ -559,9 +559,9 @@ function start() {
         methods: {
             onclick: function (e) {
                 const token = JSON.parse(e.target.attributes.token.value);
-                console.log("token", token);
+                //console.log("token", token);
                 this.selectedToken = token;
-                console.log("selectedToken", this.selectedToken.id, this.selectedToken);
+                //console.log("selectedToken", this.selectedToken.id, this.selectedToken);
                 this.$emit('select', token);
             },
         },

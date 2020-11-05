@@ -31,6 +31,8 @@ export function explorerUrl(type: string, contract: string): string {
                 return `https://explorer.binance.org/asset/${contract}`;
             case "bep20":
                 return `https://bscscan.com/token/${contract}`;
+            case "thundertoken":
+                return `https://viewblock.io/thundercore/address/${contract}`;
         }
     }
     return "";
@@ -50,6 +52,8 @@ export function chainFromType(tokenType: string) {
             return "binance";
         case "bep20":
             return "smartchain";
+        case "thundertoken":
+            return "thundertoken";
         default:
             return "unknown"
     }
@@ -113,7 +117,7 @@ export async function tokenInfoOfExistingTokenInRepo(tokenType: string, contract
 // Input: filename, such as "blockchains/ethereum/assets/0x439662426153C4fCB9c6988962FB16475D13d95B/logo.png"
 // Output: [type, id], like ["erc20", "0x439662426153C4fCB9c6988962FB16475D13d95B"]
 export function tokenIdFromFile(filename: string): [string, string] {
-    const types: string[] = ["erc20", "bep2", "bep20", "trc10", "trc20"];
+    const types: string[] = ["erc20", "bep2", "bep20", "trc10", "trc20", "thundertoken"];
     let id: [string, string] = ["", ""];
     types.forEach(type => {
         const chain = chainFromType(type);

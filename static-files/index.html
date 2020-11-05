@@ -45,7 +45,7 @@
                     <div><button v-on:click="window.location.href = loginActionUrl()">Log in</button></div>
                 </div>
                 <div id="main-ifusernorepo" class="center" v-show="userToken && !repo">
-                    <div>No fork found for user {{loginName}}.</div>
+                    <div>No fork found for user {{loginName}} (yet...).</div>
                     <div>You need to fork the assets repository to be able create pull requests.</div>
                     <div><button v-on:click="window.open(mainRepoUrl)">Fork repo</button></div>
                 </div>
