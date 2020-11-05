@@ -298,7 +298,7 @@ function start() {
                 }
                 if (this.logourl) { return this.logourl; }
                 // fallback TODO replace with placeholder image
-                return "src/emptylogo.png";
+                return "img/emptylogo.png";
             },
             opacity: function () { return this.dimmed ? 0.6 : 1; },
             roundedRadius: function () { return this.rounded ? "48%" : "0%" },
