@@ -617,10 +617,10 @@ function start() {
                     labels: p.labels.map(l => ({name: l.name, color: l.color})),
                 }));
                 if (this.pulls && this.pulls.length >= 1) {
-                    await this.onselectpull(this.pulls[0]);
+                    await this.onselectpull(this.pulls[0], true);
                 }
             },
-            onselectpull: async function (pr) {
+            onselectpull: async function (pr, silentMode = false) {
                 this.selected = pr;
                 //console.log(`select ${pr.number}: ${pr.owner}/${pr.repo}/${pr.branch}`);
                 this.selectedPullTokenIds = [];
@@ -633,7 +633,9 @@ function start() {
                 }
                 const ids = script.assets.tokenIdsFromFiles(files);
                 if (!ids || ids.length == 0) {
-                    myAlert(`Could not retrieve tokens from PR ${pr.number}`);
+                    if (!silentMode) {
+                        myAlert(`Could not retrieve tokens from PR ${pr.number}`);
+                    }
                     return;
                 }
                 this.selectedPullTokenIds = ids.map(i => ({ type: i[0], id: i[1], owner: pr.owner, repo: pr.repo, branch: pr.branch }));
@@ -1159,12 +1161,13 @@ function start() {
         async created() {
             this.userToken = getTokenQP();
             this.loginName = await checkUser(this.userToken);
-            this.repo = await checkRepo(this.userToken, this.loginName);
+            this.maintainerMode = getQueryParam("maintainer");
             const resp = await fetch("/get-version");
             if (resp.status == 200) {
                 this.version = await resp.text();
             }
-            this.maintainerMode = getQueryParam("maintainer");
+            // leave it last, slower
+            this.repo = await checkRepo(this.userToken, this.loginName);
         },
         data: {
             userToken: null,
@@ -1185,6 +1188,10 @@ function start() {
             logout: function () {
                 this.clearUser();
                 window.location.search = updateQueryParams('token', '');
+            },
+            toggleMaintainerMode: async function() {
+                this.maintainerMode = this.maintainerMode ? false : true;
+                window.location.search = updateQueryParams('maintainer', this.maintainerMode ? '1' : '');
             },
         }
     });

@@ -65,13 +65,14 @@
                 </div>
             </div>
         </div>
-        <div id="footer">
-            <span id="footer-left">
+        <div id="footer" class="padded">
+            <span id="footer-left" class="padded">
             </span>
-            <span id="footer-right">
-                <div v-show="maintainerMode">
+            <span id="footer-right" class="padded">
+                <span v-show="maintainerMode">
                     <span id="version" class="smallfont">v{{version}}</span>
-                </div>
+                </span>
+                <button v-show="userToken" v-on:click="toggleMaintainerMode">{{this.maintainerMode ? 'Contributor Mode' : 'Maintainer Mode'}}</button>
             </span>
         </div>
     </span>
