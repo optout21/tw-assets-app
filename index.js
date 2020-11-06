@@ -11,6 +11,9 @@ const serveStatic = require('serve-static');
 const dotenv = require('dotenv');
 const { createOAuthAppAuth } = require("@octokit/auth-oauth-app");
 
+const appScopes = "public_repo%20read:user";
+const gitHub = "https://github.com";
+
 dotenv.config();
 const port = process.env.PORT || 3000;
 const clientId = process.env.CLIENT_ID;
@@ -30,6 +33,12 @@ const version = packageJson.version;
 function retrieveVersion(request, response) {
     response.writeHead(200, { 'Content-Type': 'text/plain' });
     response.end(version);
+}
+
+function githubLoginRedirect(request, response) {
+    var githubAuthUrl = `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
+    response.writeHead(300, { 'Location': githubAuthUrl });
+    response.end('');
 }
 
 async function handleCallback(request, response) {
@@ -78,6 +87,9 @@ var httpServer = http.createServer(async function (req, res) {
         console.log(`req.url ${req.url}`)
         if (req.url === "/get-version") {
             retrieveVersion(req, res);
+        } else if (req.url === "/githubLoginRedirect") {
+            githubLoginRedirect(req, res);
+            return;
         } else if (req.url === "/callback" || req.url.startsWith("/callback?")) {
             handleCallback(req, res);
             return;

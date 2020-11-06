@@ -1,6 +1,4 @@
 const appName = "tw-assets-management";
-const clientId = "b9ff96b9717574ee8189";
-const appScopes = "public_repo%20read:user";
 const gitHub = "https://github.com";
 const mainRepoOwner = "trustwallet";
 const mainRepoName = "assets";
@@ -33,7 +31,7 @@ function authHeaders(userToken) {
 }
 
 function loginActionUrl() {
-    return `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
+    return `/githubLoginRedirect`;
 }
 
 function getQueryParam(param) {
@@ -43,6 +41,12 @@ function getQueryParam(param) {
 
 function getTokenQP() {
     return getQueryParam("token");
+}
+
+function updateQueryParams(newParamName, newValue) {
+    var urlParams = new URLSearchParams(window.location.search);
+    urlParams.set(newParamName, newValue);
+    return urlParams.toString();
 }
 
 async function getUser(userToken) {
@@ -1180,6 +1184,7 @@ function start() {
             },
             logout: function () {
                 this.clearUser();
+                window.location.search = updateQueryParams('token', '');
             },
         }
     });

@@ -22,10 +22,10 @@
                 <img src="img/trust_logotype.svg" />
             </span>
             <span id="menu-right" class="padded">
-                <span v-show="userToken == null">
+                <span v-show="!userToken">
                     <button v-on:click="window.location.href = loginActionUrl()">Log in with GitHub</button>
                 </span>
-                <span v-show="userToken != null">
+                <span v-show="userToken">
                     <button v-on:click="logout()">Logged in as {{loginName}}</button>
                 </span>
             </span>
