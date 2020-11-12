@@ -349,7 +349,7 @@ async function getTokenCirculationEth(tokenType: string, explorer: string, token
     return holdersString;
 }
 
-const CirculationHoldersLimit = 500;
+const CirculationHoldersLimit = 2500;
 
 export function checkHoldersLimit(holders: string): {res: number, msg: string} {
     if (!holders) {
