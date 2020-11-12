@@ -86,28 +86,39 @@ async function checkRepo(userToken, loginName) {
     }
     const repos = await getUserRepos(userToken);
     if (!repos || repos.length == 0) {
+        addLog(`Warning: No repositories found for user ${loginName}`);
         return null;
     }
     // first try under 'assets' name
     for (const r of repos) {
-        if (r.fork && r.name === mainRepoName) {
-            const r2 = await getRepo(userToken, loginName, r.name);
-            if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
-                return r.name;
+        try {
+            if (r && r.fork && r.name === mainRepoName) {
+                const r2 = await getRepo(userToken, loginName, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    addLog(`Fork repo found, ${loginName} ${r.name}`);
+                    return r.name;
+                }
             }
+        } catch (error) {
+            addLog(`Error: ${r.name} ${error}`);
         }
     }
     // try again all others
     for (const r of repos) {
-        if (r.fork) {
-            const r2 = await getRepo(userToken, loginName, r.name);
-            if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
-                return r.name;
+        try {
+            if (r && r.fork) {
+                const r2 = await getRepo(userToken, loginName, r.name);
+                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
+                    addLog(`Fork repo found, ${loginName} ${r.name}`);
+                    return r.name;
+                }
             }
+        } catch (error) {
+            addLog(`Error: ${r.name} ${error}`);
         }
     }
+    addLog(`Warning: Fork repo not found, checked ${repos.length} repos of user ${loginName}`);
     return null;
-    //addLog(`User ${loginName}, fork repo ${repo}`);
 }
 
 // Retrieve the size of an image (url or stream) but placing in a hidden img and retrieving size
