@@ -1170,6 +1170,7 @@ function start() {
     var app = new Vue({
         el: '#app',
         async created() {
+            this.initialized = false;
             this.userToken = getTokenQP();
             this.loginName = await checkUser(this.userToken);
             this.maintainerMode = getQueryParam("maintainer");
@@ -1179,8 +1180,10 @@ function start() {
             }
             // leave it last, slower
             this.repo = await checkRepo(this.userToken, this.loginName);
+            this.initialized = true;
         },
         data: {
+            initialized: false,
             userToken: null,
             loginName: null,
             repo: null,

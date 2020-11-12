@@ -31,33 +31,47 @@
             </span>
         </div>
         <div>
-            <div class="main">
-                <div id="menu-left" class="flexrow" v-show="maintainerMode">
-                    <span class="tab-select selection-item" v-on:click="selectTab('tab-prs')"
-                        v-bind:class="{'selected-item': activeTab == 'tab-prs'}">Pull Requests</span>
-                    <span class="tab-select selection-item" v-on:click="selectTab('tab-search')"
-                        v-bind:class="{'selected-item': activeTab == 'tab-search'}">Token Search</span>
-                    <span class="tab-select selection-item" v-on:click="selectTab('tab-add')"
-                        v-bind:class="{'selected-item': activeTab == 'tab-add'}">Add New Token</span>
+            <div id="loading" class="main" v-show="!initialized">
+                <div class="mainheader">Loading...</div>
+                <div class="center smallfont">
+                    <div>user name: {{loginName}}</div>
+                    <div>repository: {{repo}}</div>
+                    <div>user token: {{userToken}}</div>
+                    <div>version: {{version}}</div>
                 </div>
-                <div id="main-ifnouser" class="center" v-show="!userToken">
-                    <div>You need to log in with your GitHub account, and authorize this application.</div>
+            </div>
+            <div v-show="initialized">
+                <div id="main-ifnouser" class="main center" v-show="!userToken">
+                    <div class="center">
+                        You need to log in with your GitHub account, and authorize this application.
+                    </div>
                 </div>
-                <div id="main-ifusernorepo" class="center" v-show="userToken && !repo">
-                    <div>No fork found for user {{loginName}} (yet...).</div>
-                    <div>You need to fork the assets repository to be able create pull requests.</div>
-                    <div><button v-on:click="window.open(mainRepoUrl)">Fork repo</button></div>
-                </div>
-                <div id="main-ifuserrepo" v-show="userToken && repo">
-                    <main-pulls id="tab-pulls" :user-token="userToken" :login-name="loginName" :repo="repo"
-                        :enabled="maintainerMode" v-show="maintainerMode && activeTab == 'tab-prs'">
-                    </main-pulls>
-                    <main-token-search id="tab-search" :user-token="userToken" :login-name="loginName" :repo="repo"
-                        v-show="maintainerMode && activeTab == 'tab-search'">
-                    </main-token-search>
-                    <main-add-token id="tab-add" :user-token="userToken" :login-name="loginName" :repo="repo"
-                        v-show="activeTab == 'tab-add'">
-                    </main-add-token>
+                <div v-show="userToken">
+                    <div id="main-ifusernorepo" class="main center" v-show="!repo">
+                        <div class="center">
+                            <div>No forked repository found for user {{loginName}}</div>
+                            <div>You need to fork the assets repository to be able create pull requests.</div>
+                        </div>
+                    </div>
+                    <div class="main" v-show="repo">
+                        <div id="menu-left" class="flexrow" v-show="maintainerMode">
+                            <span class="tab-select selection-item" v-on:click="selectTab('tab-prs')"
+                                v-bind:class="{'selected-item': activeTab == 'tab-prs'}">Pull Requests</span>
+                            <span class="tab-select selection-item" v-on:click="selectTab('tab-search')"
+                                v-bind:class="{'selected-item': activeTab == 'tab-search'}">Token Search</span>
+                            <span class="tab-select selection-item" v-on:click="selectTab('tab-add')"
+                                v-bind:class="{'selected-item': activeTab == 'tab-add'}">Add New Token</span>
+                        </div>
+                        <main-pulls id="tab-pulls" :user-token="userToken" :login-name="loginName" :repo="repo"
+                            :enabled="maintainerMode" v-show="maintainerMode && activeTab == 'tab-prs'">
+                        </main-pulls>
+                        <main-token-search id="tab-search" :user-token="userToken" :login-name="loginName" :repo="repo"
+                            v-show="maintainerMode && activeTab == 'tab-search'">
+                        </main-token-search>
+                        <main-add-token id="tab-add" :user-token="userToken" :login-name="loginName" :repo="repo"
+                            v-show="activeTab == 'tab-add'">
+                        </main-add-token>
+                    </div>
                 </div>
                 <div hidden="true">
                     <img id="image-placeholder-for-size-computation" src="img/emptylogo.png" />
