@@ -42,7 +42,6 @@
                 </div>
                 <div id="main-ifnouser" class="center" v-show="!userToken">
                     <div>You need to log in with your GitHub account, and authorize this application.</div>
-                    <div><button v-on:click="window.location.href = loginActionUrl()">Log in</button></div>
                 </div>
                 <div id="main-ifusernorepo" class="center" v-show="userToken && !repo">
                     <div>No fork found for user {{loginName}} (yet...).</div>
