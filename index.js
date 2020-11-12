@@ -37,7 +37,7 @@ function retrieveVersion(request, response) {
 
 function githubLoginRedirect(request, response) {
     var githubAuthUrl = `${gitHub}/login/oauth/authorize?scope=${appScopes}&client_id=${clientId}`;
-    response.writeHead(300, { 'Location': githubAuthUrl });
+    response.writeHead(302, { 'Location': githubAuthUrl });
     response.end('');
 }
 
@@ -76,7 +76,7 @@ async function handleCallback(request, response) {
     console.log(`Saved token: ${access_token}`);
 
     const redir = `/index.html?token=${access_token}`;
-    response.writeHead(300, { 'Location': redir });
+    response.writeHead(302, { 'Location': redir });
     response.end('');
 }
 

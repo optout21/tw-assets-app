@@ -1,6 +1,6 @@
 {
   "name": "tw-assets-management",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "Github App to help adding token info (assets) to Trust Wallet Assets repository.",
   "main": "index.js",
   "scripts": {
