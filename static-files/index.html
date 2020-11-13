@@ -34,10 +34,10 @@
             <div id="loading" class="main" v-show="!initialized">
                 <div class="mainheader">Loading...</div>
                 <div class="center smallfont">
-                    <div>user name: {{loginName}}</div>
-                    <div>repository: {{repo}}</div>
-                    <div>user token: {{userToken}}</div>
-                    <div>version: {{version}}</div>
+                    <div>user name: {{loginName ? loginName : "..."}}</div>
+                    <div>repository: {{repo ? repo : "..."}}</div>
+                    <div>user token: {{userToken ? userToken : "..."}}</div>
+                    <div>version: {{version ? version : "..."}}</div>
                 </div>
             </div>
             <div v-show="initialized">

@@ -178,15 +178,19 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
             res.push({ res: 2, msg: "Website cannot be empty" });
         } else {
             const website = tokenInfo.info["website"];
+
             try {
                 const result = await fetch(website);
-                if (result.status != 200) {
+                if (result.status == 404) {
                     res.push({ res: 2, msg: `Website does not exist, status ${result.status}, url ${website}` });
+                } else if (result.status != 200) {
+                    res.push({ res: 1, msg: `Could not check website availability, status ${result.status}, url ${website}` });
                 } else {
                     res.push({ res: 0, msg: `Website OK` });
                 }
             } catch (error) {
-                res.push({ res: 2, msg: `Website does not exist, error ${error}, url ${website}` });
+                // may be CORS, treat only as warning
+                res.push({ res: 1, msg: `Could not check website availability, error ${error}, url ${website}` });
             }
         }
 
@@ -196,13 +200,16 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
             const explorerUrl = tokenInfo.info["explorer"];
             try {
                 const result = await fetch(explorerUrl);
-                if (result.status != 200) {
+                if (result.status == 404) {
                     res.push({ res: 2, msg: `ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}` });
+                } else if (result.status != 200) {
+                    res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, status ${result.status}, url ${explorerUrl}` });
                 } else {
                     res.push({ res: 0, msg: `Explorer URL OK` });
                 }
             } catch (error) {
-                res.push({ res: 2, msg: `ExplorerUrl does not exist, error ${error}, url ${explorerUrl}` });
+                // may be CORS, treat only as warning
+                res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, error ${error}, url ${explorerUrl}` });
             }
         }
 
