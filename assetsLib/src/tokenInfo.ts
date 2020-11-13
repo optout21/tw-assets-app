@@ -309,8 +309,10 @@ export async function getTokenCirculation(tokenType: string, explorer: string, t
     {
         switch (tokenType.toLowerCase()) {
             case 'erc20':
+                //return await getTokenCirculationEtherscan(tokenType, explorer, tokenAddress);
+                return await getTokenHoldersEthExpl(tokenAddress);
             case 'bep20':
-                return await getTokenCirculationEth(tokenType, explorer, tokenAddress);
+                return await getTokenCirculationEtherscan(tokenType, explorer, tokenAddress);
             default:
                 // not supported
                 return '';
@@ -320,7 +322,34 @@ export async function getTokenCirculation(tokenType: string, explorer: string, t
     }
 }
 
-async function getTokenCirculationEth(tokenType: string, explorer: string, tokenAddress: string) {
+async function callEthplorerApi(url: string): Promise<unknown> {
+    let resp = await fetch(url);
+    if (resp.status != 200) {
+        console.log("ERROR: Non-OK status", resp.status, resp.statusText, url);
+        return {};
+    }
+    //console.log(url, resp.status);
+    const data = resp.json();
+    //console.log(data);
+    return data;
+}
+
+const ethplorerApiUrl = "https://api.ethplorer.io";
+const ethplorerApiKey = "freekey";
+
+async function getTokenInfoEthplorer(token: string): Promise<unknown> {
+    const url = `${ethplorerApiUrl}/getTokenInfo/${token}?apiKey=${ethplorerApiKey}`;
+    const data = await callEthplorerApi(url);
+    return data;
+}
+
+async function getTokenHoldersEthExpl(token): Promise<string> {
+    const tokenInfo = await getTokenInfoEthplorer(token);
+    //console.log(tokenInfo);
+    return tokenInfo["holdersCount"];
+}
+
+async function getTokenCirculationEtherscan(tokenType: string, explorer: string, tokenAddress: string) {
     let explorerUrl2 = explorer;
     if (!explorerUrl2) {
         // if no explorerUrl, use default
