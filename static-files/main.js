@@ -369,9 +369,9 @@ function start() {
                 <div style="display: inline-block; padding: 15px; align: right;">
                     <table :style="'color: ' + textcolor + '; width: 130px;'">
                         <logo-preview-with-name :logourl="logosBuiltin['Bitcoin']" name="Bitcoin" :dimmed="true" />
-                        <logo-preview-with-name :logourl="logosBuiltin['Trust']" name="Trust" :dimmed="true" />
+                        <!-- logo-preview-with-name :logourl="logosBuiltin['Trust']" name="Trust" :dimmed="true" / -->
                         <logo-preview-with-name :logourl="logourl" :logostream="logostream" :name="tokenname" :dimmed="false" />
-                        <logo-preview-with-name :logourl="logosBuiltin['Binance']" name="Binance" :dimmed="true" />
+                        <!-- logo-preview-with-name :logourl="logosBuiltin['Binance']" name="Binance" :dimmed="true" / -->
                         <logo-preview-with-name :logourl="logosBuiltin['Ethereum']" name="Ethereum" :dimmed="true" />
                     </table>
                 </div>
