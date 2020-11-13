@@ -388,7 +388,7 @@ function start() {
         template:
             `
                 <div>
-                    <table>
+                    <table class="center">
                         <tr>
                             <td style="background-color: #E0E0E0;">
                                 <logo-column-preview :logourl="logourl" :logostream="logostream" :tokenname="tokenname" textcolor="black" />
@@ -1036,6 +1036,13 @@ function start() {
                                     :tokenname="tokenInput.name" />
                             </div>
                             <div>
+                                <button class="button"
+                                    onclick="document.getElementById('input.file-selector').click();">Upload Logo</button>
+                                <input id="input.file-selector" type="file" style="display: none;"
+                                    v-on:change="logoFileSelected()" />
+                                <span v-html="inputLogoText" id="input.logo-input" class="smallfont"></span>
+                            </div>
+                            <div>
                                 <input v-model="tokenInput.name" class="input wide" placeholder="Token Name"
                                             v-on:change="tokenInputChanged()" />
                             </div>
@@ -1052,13 +1059,6 @@ function start() {
                             <div><input v-model="tokenInput.contract" class="input"
                                             placeholder="Contract / ID" size="40"
                                             v-on:change="tokenInputChanged()" /></div>
-                            <div>
-                                <button class="button"
-                                    onclick="document.getElementById('input.file-selector').click();">Upload Logo</button>
-                                <input id="input.file-selector" type="file" style="display: none;"
-                                    v-on:change="logoFileSelected()" />
-                                <span v-html="inputLogoText" id="input.logo-input" class="smallfont"></span>
-                            </div>
                             <div>
                                 <input v-model="tokenInput.website" class="input"
                                     placeholder="Website" size="40"
