@@ -291,9 +291,9 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
         if (logoDimension.x == 0 && logoDimension.y == 0) {
             res.push({ res: 2, msg: `Could not retrieve logo dimensions` });
         } else if (logoDimension.x > 512 || logoDimension.y > 512) {
-            res.push({ res: 2, msg: `Logo dimensions too large ${logoDimension.x}x${logoDimension.y}` });
-        } else if (logoDimension.x < 64 || logoDimension.y < 64) {
-            res.push({ res: 2, msg: `Logo dimensions too small ${logoDimension.x}x${logoDimension.y}` });
+            res.push({ res: 2, msg: `Logo should be 256x256 pixels, it is too large ${logoDimension.x}x${logoDimension.y}` });
+        } else if (logoDimension.x < 128 || logoDimension.y < 128) {
+            res.push({ res: 2, msg: `Logo should be 256x256 pixels, it is too small ${logoDimension.x}x${logoDimension.y}` });
         } else {
             res.push({ res: 0, msg: `Logo dimensions OK (${logoDimension.x}x${logoDimension.y})` });
         }
