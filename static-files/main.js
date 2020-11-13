@@ -758,7 +758,7 @@ function start() {
                 tokenInputCheckResult: '',
                 inputLogoText: '',
                 debugMode: false,
-                debugTargetFork: false,
+                debugPrTargetFork: false,
                 testLogoIndex: 0,
                 tokenInfo: new script.assets.TokenInfo(),
                 checkButtonText: '',
@@ -971,7 +971,14 @@ function start() {
                     return;
                 }
                 this.prButtonText = '';
-                const pullUrl = `${gitHub}/${this.loginName}/${this.repo}/pull/${pullNumber}`;
+
+                var pullOwner = mainRepoOwner;
+                var pullRepo = mainRepoName;
+                if (this.debugPrTargetFork) {
+                    pullOwner = this.loginName;
+                    pullRepo = this.repo;
+                }
+                const pullUrl = `${gitHub}/${pullOwner}/${pullRepo}/pull/${pullNumber}`;
                 myAlert(`Created PR ${pullNumber}   ${pullUrl}`);
             },
             createPullButton: async function () {
@@ -979,7 +986,7 @@ function start() {
                 if (checkResult != 0 && checkResult != 1) {
                     addLog("Not creating PR due to check errors");
                 } else {
-                    await this.createBranchAndPull(this.userToken, this.loginName, this.repo, this.tokenInput, this.debugTargetFork);
+                    await this.createBranchAndPull(this.userToken, this.loginName, this.repo, this.tokenInput, this.debugPrTargetFork);
                 }
             },
             debugTestLogoGetNext: async function () {
@@ -1091,7 +1098,7 @@ function start() {
                             <button class="button" type="button" v-on:click="debugFillWithDummyData();">Fill
                                 test
                                 data</button>
-                            <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugTargetFork" /><label
+                            <input type="checkbox" id="debug_pr_target_fork_cb" v-model="debugPrTargetFork" /><label
                                 for="debug_pr_target_fork_cb">Create PR in
                                 fork
                             </label>
