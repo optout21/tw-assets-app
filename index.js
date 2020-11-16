@@ -8,6 +8,7 @@ const http = require('http');
 const url = require('url');
 const finalhandler = require('finalhandler');
 const serveStatic = require('serve-static');
+const request = require('request');
 const dotenv = require('dotenv');
 const { createOAuthAppAuth } = require("@octokit/auth-oauth-app");
 
@@ -80,19 +81,53 @@ async function handleCallback(request, response) {
     response.end('');
 }
 
+async function handleCheckUrl(req, response) {
+    //console.log(`Check url ${req.url}`);
+    const queryObject = url.parse(req.url, true).query;
+    const targetUrl = queryObject["url"];
+    //console.log(`target url: ${targetUrl}`);
+    if (!targetUrl) {
+        response.writeHead(404, { 'Content-Type': 'text/html' });
+        response.end(`Not found`);
+        return;
+    }
+
+    request(targetUrl, {}, (error, res) => {
+        if (error) {
+            console.log("ERROR", error);
+            response.writeHead(404);
+            response.end(`Error: ${error} ${targetUrl}`);
+            return;
+        };
+        console.log("res.statusCode", res.statusCode);
+        //if (res.statusCode != 200) {
+        //    console.log("res", res);
+        //}
+        response.writeHead(res.statusCode);
+        response.end(`Status: ${res.statusCode} ${targetUrl}`);
+        return;
+    });
+}
+
 var serve = serveStatic("./static-files");
 
 var httpServer = http.createServer(async function (req, res) {
     try {
-        console.log(`req.url ${req.url}`)
-        if (req.url === "/get-version") {
-            retrieveVersion(req, res);
-        } else if (req.url === "/githubLoginRedirect") {
+        console.log(`req.url ${req.url}`);
+        if (req.url === "/githubLoginRedirect") {
+            // github login redirect, containing app ID, etc.
             githubLoginRedirect(req, res);
             return;
         } else if (req.url === "/callback" || req.url.startsWith("/callback?")) {
+            // callback from OAuth login
             handleCallback(req, res);
             return;
+        } else if (req.url.startsWith("/checkUrl?")) {
+            // check accessibility of a URL in the BE (in client have CORS issues)
+            handleCheckUrl(req, res);
+            return;
+        } else if (req.url === "/get-version") {
+            retrieveVersion(req, res);
         }
         var done = finalhandler(req, res);
         serve(req, res, done);

@@ -150,15 +150,34 @@ export function tokenIdsFromFiles(filenames: string[]): [string, string][] {
     return ids;
 }
 
+// Plugin for website accisibility check, returns HTTP result code
+export interface UrlChecker {
+    checkUrl(targetUrl: string): Promise<number>;
+}
+
+// Plugin for image dimensions calculator (may use client infra)
 export interface ImageDimensionsCalculator {
     get(imageUrl: string, imageStream: string): Promise<{ x: number, y: number }>;
+}
+
+async function checkUrlWithFetch(targetUrl: string): Promise<number> {
+    try {
+        const result = await fetch(targetUrl);
+        if (result.status != 200) {
+            return result.status;
+        }
+        result.status;
+    } catch (error) {
+        return 404;
+    }
 }
 
 // Check tokenInfo for validity: contract is OK, logo is OK, etc.
 // returns:
 // - result: 0 for all OK, 1 for at least on warning, 2 for at least on error
 // - a multi-line string with the detailed results
-export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string]> {
+export async function checkTokenInfo(tokenInfo: TokenInfo, urlChecker: UrlChecker,
+    imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string]> {
     let res: { res: number, msg: string }[] = [];
 
     if (!tokenInfo.type || !normalizeType(tokenInfo.type)) {
@@ -178,19 +197,13 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
             res.push({ res: 2, msg: "Website cannot be empty" });
         } else {
             const website = tokenInfo.info["website"];
-
-            try {
-                const result = await fetch(website);
-                if (result.status == 404) {
-                    res.push({ res: 2, msg: `Website does not exist, status ${result.status}, url ${website}` });
-                } else if (result.status != 200) {
-                    res.push({ res: 1, msg: `Could not check website availability, status ${result.status}, url ${website}` });
-                } else {
-                    res.push({ res: 0, msg: `Website OK` });
-                }
-            } catch (error) {
-                // may be CORS, treat only as warning
-                res.push({ res: 1, msg: `Could not check website availability, error ${error}, url ${website}` });
+            const result = await urlChecker.checkUrl(website);
+            if (result == 404) {
+                res.push({ res: 2, msg: `Website does not exist, status ${result}, url ${website}` });
+            } else if (result != 200) {
+                res.push({ res: 1, msg: `Website could not be accessed, status ${result}, url ${website}`});
+            } else {
+                res.push({ res: 0, msg: `Website OK` });
             }
         }
 
@@ -198,18 +211,13 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, imgDimsCalc: ImageDim
             res.push({ res: 2, msg: "Explorer cannot be empty" });
         } else {
             const explorerUrl = tokenInfo.info["explorer"];
-            try {
-                const result = await fetch(explorerUrl);
-                if (result.status == 404) {
-                    res.push({ res: 2, msg: `ExplorerUrl does not exist, status ${result.status}, url ${explorerUrl}` });
-                } else if (result.status != 200) {
-                    res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, status ${result.status}, url ${explorerUrl}` });
-                } else {
-                    res.push({ res: 0, msg: `Explorer URL OK` });
-                }
-            } catch (error) {
-                // may be CORS, treat only as warning
-                res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, error ${error}, url ${explorerUrl}` });
+            const result = await urlChecker.checkUrl(explorerUrl);
+            if (result == 404) {
+                res.push({ res: 2, msg: `ExplorerUrl does not exist, status ${result}, url ${explorerUrl}` });
+            } else if (result != 200) {
+                res.push({ res: 1, msg: `ExplorerUrl could not be accessed, status ${result}, url ${explorerUrl}` });
+            } else {
+                res.push({ res: 0, msg: `Explorer URL OK` });
             }
         }
 
@@ -267,7 +275,7 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
         try {
             const response = await fetch(tokenInfo.logoUrl);
             if (response.status != 200) {
-                return [{ res: 2, msg: `Could not retrieve logo from url ${tokenInfo.logoUrl}, status ${status}` }];
+                return [{ res: 2, msg: `Could not retrieve logo from url ${tokenInfo.logoUrl}, status ${response.status}` }];
             }
             logoStreamSize = (await response.arrayBuffer()).byteLength;
             logoStreamType = response.headers.get('Content-Type');

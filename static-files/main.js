@@ -316,6 +316,13 @@ async function getPrFiles(userToken, prNum) {
     return files;
 }
 
+async function checkUrlByBackend(url) {
+    const beUrl = `/checkUrl?url=${encodeURI(url)}`;
+    console.log(`checkUrlByBackend ${beUrl}`);
+    let resp = await fetch(beUrl);
+    return resp.status;
+}
+
 function start() {
     // Preview for a single logo, supports url and stream, rounded mask, dimming
     Vue.component('logo-single-preview', {
@@ -467,7 +474,9 @@ function start() {
         methods: {
             checkInfoButton: async function () {
                 addLog("starting TokenInfo check...");
-                let [resnum, resmsg] = await script.assets.checkTokenInfo(this.tokenInfo, { get: getImageDimension });
+                let [resnum, resmsg] = await script.assets.checkTokenInfo(this.tokenInfo,
+                    { checkUrl: checkUrlByBackend },
+                    { get: getImageDimension });
                 if (resnum >= 2) {
                     myAlert("Check result: ERROR \n" + resmsg);
                 } else if (resnum >= 1) {
@@ -812,7 +821,8 @@ function start() {
             checkInputButton: async function () {
                 this.checkButtonText = 'Checking ...';
                 addLog("starting TokenInput check...");
-                const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput, { get: getImageDimension });
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput,
+                    { checkUrl: checkUrlByBackend }, { get: getImageDimension });
                 if (resnum == 0) {
                     myAlert("Check result: OK\n" + resmsg);
                     this.checkButtonText = '';
@@ -835,11 +845,11 @@ function start() {
                 this.checkButtonText = '';
                 return resnum;
             },
-            tokenInputLogoChanged: async function() {
+            tokenInputLogoChanged: async function () {
                 if (this.isInputStillEmpty()) {
                     return;
                 }
-                const [resnum, resmsg] = await script.assets.checkTokenInputLogo(this.tokenInput, {get: getImageDimension});
+                const [resnum, resmsg] = await script.assets.checkTokenInputLogo(this.tokenInput, { get: getImageDimension });
                 this.errorLogo = ' ';
                 if (resnum >= 2) {
                     this.errorLogo = resmsg;
@@ -868,7 +878,7 @@ function start() {
                 if (this.isInputStillEmpty()) {
                     return;
                 }
-                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputWebsite(this.tokenInput);
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputWebsite(this.tokenInput, { checkUrl: checkUrlByBackend });
                 this.fixedWebsite = fixed;
                 this.errorWebsite = ' ';
                 if (resnum >= 2 || fixed) {
@@ -879,7 +889,7 @@ function start() {
                 if (this.isInputStillEmpty()) {
                     return;
                 }
-                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputExplorer(this.tokenInput);
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputExplorer(this.tokenInput, { checkUrl: checkUrlByBackend });
                 this.fixedExplorer = fixed;
                 this.errorExplorer = ' ';
                 if (resnum >= 2 || fixed) {
@@ -908,7 +918,7 @@ function start() {
                 this.tokenInput.logoStream = stream;
 
                 this.inputLogoFilename = hintName;
-                
+
                 let details = "(";
                 this.tokenInput.logoStreamSize = 0;
                 if (hintSize && hintSize > 0) {

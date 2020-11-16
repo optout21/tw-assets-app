@@ -5,7 +5,8 @@ import {
     explorerUrl,
     AggregateCheckResults,
     getTokenCirculation,
-    checkHoldersLimit
+    checkHoldersLimit,
+    UrlChecker
 } from "./tokenInfo";
 import { isEthereumAddress, toChecksum } from "./eth-address";
 
@@ -61,7 +62,7 @@ export class TokenInput {
 // - result: 0 for all OK, 1 for at least on warning, 2 for at least on error
 // - a multi-line string with the detailed results
 // - fixed version if can be auto-fixed
-export async function checkTokenInput(tokenInput: TokenInput, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string, TokenInput | null]> {
+export async function checkTokenInput(tokenInput: TokenInput, urlChecker: UrlChecker, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string, TokenInput | null]> {
     let res: { res: number, msg: string }[] = [];
     let fixed: TokenInput | null = null;
 
@@ -86,14 +87,14 @@ export async function checkTokenInput(tokenInput: TokenInput, imgDimsCalc: Image
 
     (await checkTokenInputLogoInternal(tokenInput, imgDimsCalc)).forEach(r => res.push({res: r[0], msg: r[1]}));
 
-    const [webResNum, webResMsg, webFix] = await checkTokenInputWebsite(tokenInput);
+    const [webResNum, webResMsg, webFix] = await checkTokenInputWebsite(tokenInput, urlChecker);
     if (webFix) {
         if (!fixed) { fixed = tokenInput.clone(); }
         fixed.website = webFix;
     }
     res.push({res: webResNum, msg: webResMsg});
 
-    const [explResNum, explResMsg, explFix] = await checkTokenInputExplorer(tokenInput);
+    const [explResNum, explResMsg, explFix] = await checkTokenInputExplorer(tokenInput, urlChecker);
     if (explFix) {
         if (!fixed) { fixed = tokenInput.clone(); }
         fixed.explorerUrl = explFix;
@@ -130,7 +131,7 @@ export function checkTokenInputContract(tokenInput: TokenInput): [number, string
     return [0, `Contract/ID is OK`, null];
 }
 
-export async function checkTokenInputWebsite(tokenInput: TokenInput): Promise<[number, string, string]> {
+export async function checkTokenInputWebsite(tokenInput: TokenInput, urlChecker: UrlChecker): Promise<[number, string, string]> {
     if (!tokenInput.website) {
         return [2, "Website cannot be empty", null];
     }
@@ -142,12 +143,12 @@ export async function checkTokenInputWebsite(tokenInput: TokenInput): Promise<[n
         return [2, `Website should start with '${prefix}', ${website}`, fixed];
     }
     try {
-        const result = await fetch(website);
-        if (result.status == 404) {
-            return [2, `Website does not exist, status ${result.status}, url ${website}`, null];
+        const result = await urlChecker.checkUrl(website);
+        if (result == 404) {
+            return [2, `Website does not exist, status ${result}, url ${website}`, null];
         }
-        if (result.status != 200) {
-            return [1, `Could not check website availability, status ${result.status}, url ${website}`, null];
+        if (result != 200) {
+            return [1, `Could not check website availability, status ${result}, url ${website}`, null];
         }
     } catch (error) {
         // may be CORS, treat only as warning
@@ -156,18 +157,18 @@ export async function checkTokenInputWebsite(tokenInput: TokenInput): Promise<[n
     return [0, `Website OK`, null];
 }
 
-export async function checkTokenInputExplorer(tokenInput: TokenInput): Promise<[number, string, string]> {
+export async function checkTokenInputExplorer(tokenInput: TokenInput, urlChecker: UrlChecker): Promise<[number, string, string]> {
     if (!tokenInput.explorerUrl) {
         return [2, "Explorer cannot be empty", null];
     }
     const explorer = tokenInput.explorerUrl;
     try {
-        const result = await fetch(explorer);
-        if (result.status == 404) {
-            return [2, `ExplorerUrl does not exist, status ${result.status}, url ${explorer}`, null];
+        const result = await urlChecker.checkUrl(explorer);
+        if (result == 404) {
+            return [2, `ExplorerUrl does not exist, status ${result}, url ${explorer}`, null];
         }
-        if (result.status != 200) {
-            return [1, `Could not check if ExplorerUrl exists, status ${result.status}, url ${tokenInput.explorerUrl}`, null];
+        if (result != 200) {
+            return [1, `Could not check if ExplorerUrl exists, status ${result}, url ${tokenInput.explorerUrl}`, null];
         }
         // check if explorer is what we would think
         const guessedExplorer = explorerUrl(tokenInput.type, tokenInput.contract);
