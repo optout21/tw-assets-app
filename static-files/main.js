@@ -1,10 +1,11 @@
-const appName = "tw-assets-management";
+const appName = "TW Asets Management";
+const appNameHtml = `<a href="https://assets.trustwallet.com">${appName}</a>`;
 const gitHub = "https://github.com";
 const mainRepoOwner = "trustwallet";
 const mainRepoName = "assets";
 const mainRepoFullName = mainRepoOwner + "/" + mainRepoName;
 const mainRepoUrl = `${gitHub}/${mainRepoFullName}.git`;
-const prBodyFooter = `\n\nPR created by ${appName}`;
+const prBodyFooter = `\n\nPR created by ${appNameHtml}`;
 
 const sampleEthContract = "0x6d84682C82526E245f50975190EF0Fff4E4fc077";
 const testLogoUrls = [
