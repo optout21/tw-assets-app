@@ -164,6 +164,24 @@ function arrayBufferToBase64(buffer) {
     return window.btoa(binary);
 }
 
+async function createFork(userToken, owner, repo) {
+    const result = await script.octoRequest("POST /repos/:owner/:repo/forks", {
+        headers: authHeaders(userToken),
+        owner: owner,
+        repo: repo
+    });
+    return result.data.full_name;
+}
+
+async function doCreateFork(userToken) {
+    const res = await createFork(userToken, mainRepoOwner, mainRepoName);
+    myAlert(`Fork created: ${res}`);
+    // wait a bit before reload
+    new Promise(resolve => setTimeout(resolve, 3000));
+    // reload
+    window.location = window.location;
+}
+
 function newBranchName() {
     const today = new Date();
     const date = (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0') +

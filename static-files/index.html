@@ -53,7 +53,11 @@
                         <div class="center">
                             <div>No forked repository found for user {{loginName}}</div>
                             <div>You need to fork the assets repository to be able create pull requests.</div>
-                            <div>Go to the <a v-bind:href="mainRepoUrl" target="_blank">assets repository</a>, and press the Fork button</div>
+                            <div>If you forked recently, try to <a v-bind:href="window.location">reload</a> after a few minutes.</div>
+                            <div>
+                                <button v-on:click="doCreateFork(userToken)">Fork '{{mainRepoName}}' Repo</button>
+                            </div>
+                            <div>To fork manually, go to the <a v-bind:href="mainRepoUrl" target="_blank">assets repository</a>, and press the Fork button</div>
                             <div>After completion, <a v-bind:href="window.location">reload</a> this page</div>
                             <div class="padded">
                                 <img src="img/fork.png" width="600" border="1" />
