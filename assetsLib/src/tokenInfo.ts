@@ -319,13 +319,28 @@ async function checkTokenInfoLogo(tokenInfo: TokenInfo, imgDimsCalc: ImageDimens
     return res;
 }
 
+export async function getTokenInfo(tokenType: string, tokenAddress: string) {
+    try
+    {
+        switch (tokenType.toLowerCase()) {
+            case 'erc20':
+                return await getTokenInfoEthplorer(tokenAddress);
+            default:
+                // not supported
+                return null;
+        }
+    } catch (error) {
+        return null;
+    }
+}
+
 export async function getTokenCirculation(tokenType: string, explorer: string, tokenAddress: string) {
     try
     {
         switch (tokenType.toLowerCase()) {
             case 'erc20':
                 //return await getTokenCirculationEtherscan(tokenType, explorer, tokenAddress);
-                return await getTokenHoldersEthExpl(tokenAddress);
+                return await getTokenHoldersEthplorer(tokenAddress);
             case 'bep20':
                 return await getTokenCirculationEtherscan(tokenType, explorer, tokenAddress);
             default:
@@ -355,10 +370,18 @@ const ethplorerApiKey = "freekey";
 async function getTokenInfoEthplorer(token: string): Promise<unknown> {
     const url = `${ethplorerApiUrl}/getTokenInfo/${token}?apiKey=${ethplorerApiKey}`;
     const data = await callEthplorerApi(url);
-    return data;
+    return {
+        facebook: data['facebook'],
+        holdersCount: data['holdersCount'],
+        name: data['name'],
+        symbol: data['symbol'],
+        transfersCount: data['transfersCount'],
+        twitter: data['twitter'],
+        website: data['website'],
+    }
 }
 
-async function getTokenHoldersEthExpl(token): Promise<string> {
+async function getTokenHoldersEthplorer(token): Promise<string> {
     const tokenInfo = await getTokenInfoEthplorer(token);
     //console.log(tokenInfo);
     return tokenInfo["holdersCount"];

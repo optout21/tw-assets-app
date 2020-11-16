@@ -870,6 +870,14 @@ function start() {
                 this.errorContract = ' ';
                 if (resnum >= 2 || fixed) {
                     this.errorContract = resmsg;
+                } else {
+                    // contract OK, try to preload info from it
+                    const tokenInf = await script.assets.getTokenInfo(this.tokenInput.type, this.tokenInput.contract);
+                    if (tokenInf) {
+                        if (tokenInf.name && tokenInf.symbol && !this.tokenInput.name) { this.tokenInput.name = `${tokenInf.name} (${tokenInf.symbol})`; }
+                        if (tokenInf.name && !this.tokenInput.name) { this.tokenInput.name = tokenInf.name; }
+                        if (tokenInf.website && !this.tokenInput.website) { this.tokenInput.website = tokenInf.website; }
+                    }
                 }
             },
             tokenInputNameChanged: async function () {

@@ -8,6 +8,7 @@ export {
     explorerUrlForChain,
     checkTokenInfo,
     ImageDimensionsCalculator,
+    getTokenInfo,
     getTokenCirculation
 } from "./tokenInfo";
 export {
