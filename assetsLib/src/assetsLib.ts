@@ -4,7 +4,8 @@ export {
     tokenInfoOfExistingToken,
     tokenInfoOfExistingTokenInRepo,
     chainFromType,
-    explorerUrl,
+    explorerUrlForToken,
+    explorerUrlForChain,
     checkTokenInfo,
     ImageDimensionsCalculator,
     getTokenCirculation

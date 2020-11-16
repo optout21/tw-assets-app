@@ -861,7 +861,7 @@ function start() {
                 }
                 // auto-fill explorer
                 if (this.tokenInput.contract && !this.tokenInput.explorerUrl) {
-                    const explorer = script.assets.explorerUrl(this.tokenInput.type, this.tokenInput.contract);
+                    const explorer = script.assets.explorerUrlForToken(this.tokenInput.type, this.tokenInput.contract);
                     this.tokenInput.explorerUrl = explorer;
                 }
 
@@ -1136,6 +1136,10 @@ function start() {
                             <div><input v-model="tokenInput.contract" class="input"
                                             placeholder="Contract / ID" size="40"
                                             v-on:change="tokenInputContractChanged()" />
+                            </div>
+                            <div class="smallfont padded" v-show="tokenInput.type && !tokenInput.contract">
+                                Search for tokens:
+                                <a v-bind:href="script.assets.explorerUrlForChain(tokenInput.type)">{{script.assets.explorerUrlForChain(tokenInput.type)}}</a>
                             </div>
                             <div class="smallfont error padded">
                                 <span v-show="fixedContract"><a v-on:click="tokenInput.contract = fixedContract; tokenInputContractChanged()">Fix</a></span>

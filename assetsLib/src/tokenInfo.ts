@@ -14,25 +14,32 @@ export class TokenInfo {
     infoString: string = "{}";
 
     explorerUrl(): string {
-        return explorerUrl(this.type, this.contract);
+        return explorerUrlForToken(this.type, this.contract);
     }
 }
 
-export function explorerUrl(type: string, contract: string): string {
+export function explorerUrlForChain(chainType: string): string {
+    switch (chainType.toLowerCase()) {
+        case "erc20": return "https://etherscan.io";
+        case "trc10":
+        case "trc20":
+            return "https://tronscan.io";
+        case "bep2": return "https://explorer.binance.org";
+        case "bep20": return "https://bscscan.com";
+        case "thundertoken": return "https://viewblock.io";
+    }
+    return "";
+}
+
+export function explorerUrlForToken(chainType: string, contract: string): string {
     if (contract) {
-        switch (type.toLowerCase()) {
-            case "erc20":
-                return `https://etherscan.io/token/${contract}`;
-            case "trc10":
-                return `https://tronscan.io/#/token/${contract}`;
-            case "trc20":
-                return `https://tronscan.io/#/token20/${contract}`;
-            case "bep2":
-                return `https://explorer.binance.org/asset/${contract}`;
-            case "bep20":
-                return `https://bscscan.com/token/${contract}`;
-            case "thundertoken":
-                return `https://viewblock.io/thundercore/address/${contract}`;
+        switch (chainType.toLowerCase()) {
+            case "erc20": return `https://etherscan.io/token/${contract}`;
+            case "trc10": return `https://tronscan.io/#/token/${contract}`;
+            case "trc20": return `https://tronscan.io/#/token20/${contract}`;
+            case "bep2": return `https://explorer.binance.org/asset/${contract}`;
+            case "bep20": return `https://bscscan.com/token/${contract}`;
+            case "thundertoken": return `https://viewblock.io/thundercore/address/${contract}`;
         }
     }
     return "";
@@ -361,7 +368,7 @@ async function getTokenCirculationEtherscan(tokenType: string, explorer: string,
     let explorerUrl2 = explorer;
     if (!explorerUrl2) {
         // if no explorerUrl, use default
-        explorerUrl2 = explorerUrl(tokenType, tokenAddress);
+        explorerUrl2 = explorerUrlForToken(tokenType, tokenAddress);
         if (!explorerUrl2) {
             return "";
         }

@@ -2,7 +2,7 @@ import {
     TokenInfo,
     normalizeType,
     ImageDimensionsCalculator,
-    explorerUrl,
+    explorerUrlForToken,
     AggregateCheckResults,
     getTokenCirculation,
     checkHoldersLimit,
@@ -171,7 +171,7 @@ export async function checkTokenInputExplorer(tokenInput: TokenInput, urlChecker
             return [1, `Could not check if ExplorerUrl exists, status ${result}, url ${tokenInput.explorerUrl}`, null];
         }
         // check if explorer is what we would think
-        const guessedExplorer = explorerUrl(tokenInput.type, tokenInput.contract);
+        const guessedExplorer = explorerUrlForToken(tokenInput.type, tokenInput.contract);
         if (explorer != guessedExplorer) {
             return [1, `Recommended ExplorerUrl is ${guessedExplorer} instead of ${explorer}`, guessedExplorer];
         }
