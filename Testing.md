@@ -26,3 +26,13 @@ Check the PR in Github, it contains the correct logo.png and info.json files.
 - Browser: Chrome, Firefox, Safari
 - Desktop, mobile platform
 
+### Error inputs
+
+- Logo is not a .PNG file (Hint: use a .jpeg file)
+- Logo too large, larger than 100kB
+- Logo too large, larger than 512x512
+- Logo too small, smaller than 128x128
+- Contract invalid -- Hint: Use ERC20 contract, remove a few characters
+- ERC20 Contract not checksum -- Hint: change a capital letter to smallercase
+- Website does not start with 'https://'
+- Explorer invalid -- Hint: Change valid etherscan.io url to be invalid

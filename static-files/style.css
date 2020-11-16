@@ -113,6 +113,9 @@ textarea {
   font-size: 90%;
   opacity: 80%;
 }
+.error {
+  color: red
+}
 .wide {
   width: 100%;
 }

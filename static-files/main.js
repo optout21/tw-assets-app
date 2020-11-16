@@ -80,7 +80,7 @@ async function getRepo(userToken, owner, repo) {
     return result.data;
 }
 
-async function checkRepo(userToken, loginName) {
+async function checkRepo(userToken, loginName, progressCallback) {
     if (!userToken || !loginName) {
         return null;
     }
@@ -92,6 +92,7 @@ async function checkRepo(userToken, loginName) {
     // first try under 'assets' name
     for (const r of repos) {
         try {
+            if (progressCallback) { progressCallback(r.name); }
             if (r && r.fork && r.name === mainRepoName) {
                 const r2 = await getRepo(userToken, loginName, r.name);
                 if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
@@ -106,6 +107,7 @@ async function checkRepo(userToken, loginName) {
     // try again all others
     for (const r of repos) {
         try {
+            if (progressCallback) { progressCallback(r.name); }
             if (r && r.fork) {
                 const r2 = await getRepo(userToken, loginName, r.name);
                 if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
@@ -340,7 +342,7 @@ function start() {
                         <logo-single-preview :size="32" :logourl="logourl" :logostream="logostream" :dimmed="dimmed" :rounded="true" />
                     </td>
                     <td class="wide" style="align: right;">
-                        <span style="vertical-align: center; font-size: 70%;">{{name ? name : '(Token)'}}</span>
+                        <span style="vertical-align: center; font-size: 70%;">{{name ? name.substring(0, 18) : '(Token)'}}</span>
                     </td>
                 </tr>
             `
@@ -505,19 +507,19 @@ function start() {
             label: Object,
         },
         computed: {
-            initials: function() {
+            initials: function () {
                 const words = this.label.name.split(' ');
                 inits = words.map(w => w[0]).join('');
                 return inits.substring(0, 3);
             },
         },
-        template: 
+        template:
             `
                 <span class="pull-label-small" v-bind:style="{ backgroundColor: label.color }"
                     v-bind:title="label.name">{{initials}}
                 </span>
             `
-        });
+    });
 
     Vue.component('pull-item', {
         props: {
@@ -529,12 +531,12 @@ function start() {
             },
         },
         computed: {
-            shortTitle: function() {
+            shortTitle: function () {
                 const maxlen = 25;
                 if (this.pull.title.length <= maxlen) {
                     return this.pull.title;
                 }
-                return this.pull.title.substring(0, maxlen-1) + '...';
+                return this.pull.title.substring(0, maxlen - 1) + '...';
             }
         },
         template:
@@ -625,7 +627,7 @@ function start() {
                     owner: p.head.user ? p.head.user.login : '',
                     repo: p.head.repo ? p.head.repo.name : '',
                     branch: p.head.ref,
-                    labels: p.labels.map(l => ({name: l.name, color: l.color})),
+                    labels: p.labels.map(l => ({ name: l.name, color: l.color })),
                 }));
                 if (this.pulls && this.pulls.length >= 1) {
                     await this.onselectpull(this.pulls[0], true);
@@ -682,7 +684,7 @@ function start() {
         },
         computed: {
             symbol: function () { return this.token.symbol.substring(0, 10); },
-            name: function () { return this.token.name.substring(0, 20); },
+            name: function () { return this.token.name.substring(0, 18); },
             type: function () { return this.token.type.toLowerCase(); },
         },
         template:
@@ -755,8 +757,15 @@ function start() {
         data: function () {
             return {
                 tokenInput: new script.assets.TokenInput(),
-                tokenInputCheckResult: '',
-                inputLogoText: '',
+                errorLogo: ' ',
+                errorContract: ' ',
+                errorWebsite: ' ',
+                errorExplorer: ' ',
+                fixedContract: null,
+                fixedWebsite: null,
+                fixedExplorer: null,
+                inputLogoFilename: '',
+                inputLogoDetails: '',
                 debugMode: false,
                 debugPrTargetFork: false,
                 testLogoIndex: 0,
@@ -774,32 +783,12 @@ function start() {
                 this.tokenInput = new script.assets.TokenInput();
                 this.inputLogoSetStream(null, null, 0, null);
             },
-            checkInput: async function () {
-                // don't display check result if all inputs are emopty
+            isInputStillEmpty: function () {
+                // don't display check result if all inputs are empty
                 if (!this.tokenInput.name && !this.tokenInput.contract && !this.tokenInput.logoStream) {
-                    this.tokenInputCheckResult = "";
-                    //document.getElementById("input.check-result").style["color"] = "";
-                    return 2;
+                    return true;
                 }
-
-                // auto-fill explorer
-                if (this.tokenInput.contract && !this.tokenInput.explorerUrl) {
-                    const explorer = script.assets.explorerUrl(this.tokenInput.type, this.tokenInput.contract);
-                    this.tokenInput.explorerUrl = explorer;
-                }
-
-                const [resnum, resmsg, fixed] = await script.assets.checkTokenInput(this.tokenInput, { get: getImageDimension });
-                if (resnum >= 2) {
-                    this.tokenInputCheckResult = "ERROR:\n" + resmsg;
-                    //document.getElementById("input.check-result").style["color"] = "red";
-                } else if (resnum >= 1) {
-                    this.tokenInputCheckResult = "Warning:\n" + resmsg;
-                    //document.getElementById("input.check-result").style["color"] = "orange";
-                } else {
-                    this.tokenInputCheckResult = "OK\n" + resmsg;
-                    //document.getElementById("input.check-result").style["color"] = "";
-                }
-                return resnum;
+                return false;
             },
             checkInputButton: async function () {
                 this.checkButtonText = 'Checking ...';
@@ -822,43 +811,103 @@ function start() {
                     return resnum;
                 }
                 // can be fixed
-                tokenInput = fixed;
+                this.tokenInput = fixed;
                 myAlert("Check result: Fixed! \n " + resmsg);
                 this.checkButtonText = '';
                 return resnum;
             },
+            tokenInputLogoChanged: async function() {
+                if (this.isInputStillEmpty()) {
+                    return;
+                }
+                const [resnum, resmsg] = await script.assets.checkTokenInputLogo(this.tokenInput, {get: getImageDimension});
+                this.errorLogo = ' ';
+                if (resnum >= 2) {
+                    this.errorLogo = resmsg;
+                }
+            },
+            tokenInputContractChanged: async function () {
+                if (this.isInputStillEmpty()) {
+                    return;
+                }
+                // auto-fill explorer
+                if (this.tokenInput.contract && !this.tokenInput.explorerUrl) {
+                    const explorer = script.assets.explorerUrl(this.tokenInput.type, this.tokenInput.contract);
+                    this.tokenInput.explorerUrl = explorer;
+                }
+
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputContract(this.tokenInput);
+                this.fixedContract = fixed;
+                this.errorContract = ' ';
+                if (resnum >= 2 || fixed) {
+                    this.errorContract = resmsg;
+                }
+            },
+            tokenInputNameChanged: async function () {
+            },
+            tokenInputWebsiteChanged: async function () {
+                if (this.isInputStillEmpty()) {
+                    return;
+                }
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputWebsite(this.tokenInput);
+                this.fixedWebsite = fixed;
+                this.errorWebsite = ' ';
+                if (resnum >= 2 || fixed) {
+                    this.errorWebsite = resmsg;
+                }
+            },
+            tokenInputExplorerChanged: async function () {
+                if (this.isInputStillEmpty()) {
+                    return;
+                }
+                const [resnum, resmsg, fixed] = await script.assets.checkTokenInputExplorer(this.tokenInput);
+                this.fixedExplorer = fixed;
+                this.errorExplorer = ' ';
+                if (resnum >= 2 || fixed) {
+                    this.errorExplorer = resmsg;
+                }
+            },
+            tokenInputDescriptionChanged: async function () {
+            },
             tokenInputChanged: async function () {
-                await this.checkInput();
+                await this.tokenInputLogoChanged();
+                await this.tokenInputContractChanged();
+                await this.tokenInputNameChanged();
+                await this.tokenInputWebsiteChanged();
+                await this.tokenInputExplorerChanged();
+                await this.tokenInputDescriptionChanged();
             },
             inputLogoSetStream: function (stream, hintName, hintSize, hintMime) {
                 if (!stream) {
                     this.tokenInput.logoStream = null;
                     this.tokenInput.logoStreamSize = 0;
                     this.tokenInput.logoStreamType = null;
-                    this.inputLogoText = "(no image)";
+                    this.inputLogoFilename = "(no image)";
+                    this.inputLogoDetails = "";
                     return;
                 }
                 this.tokenInput.logoStream = stream;
-                let text = "(";
 
+                this.inputLogoFilename = hintName;
+                
+                let details = "(";
                 this.tokenInput.logoStreamSize = 0;
                 if (hintSize && hintSize > 0) {
                     this.tokenInput.logoStreamSize = hintSize;
-                    text += `${hintSize} bytes`;
+                    details += `${hintSize} bytes`;
                 } else {
-                    text += `${this.tokenInput.logoStream.length} base64 bytes`;
+                    details += `${this.tokenInput.logoStream.length} base64 bytes`;
                 }
                 if (hintName) {
-                    text += `, ${hintName}`;
+                    details += `, ${hintName}`;
                 }
                 this.tokenInput.logoStreamType = "";
                 if (hintMime) {
                     this.tokenInput.logoStreamType = hintMime;
-                    text += `, ${hintMime}`;
+                    details += `, ${hintMime}`;
                 }
-
-                text += ")";
-                this.inputLogoText = text;
+                details += ")";
+                this.inputLogoDetails = details;
             },
             logoFileSelected: async function () {
                 const file = document.getElementById("input.file-selector").files[0];
@@ -870,7 +919,7 @@ function start() {
                         var contents = evt.target.result;
                         var base64 = arrayBufferToBase64(contents);
                         app.inputLogoSetStream(base64, file.name, file.size, file.type);
-                        await app.tokenInputChanged();
+                        await app.tokenInputLogoChanged();
                     }
                     reader.onerror = function (evt) {
                         myAlert(`Error reading file ${file.name}`);
@@ -881,7 +930,7 @@ function start() {
                 myAlert("PR creation error: " + message);
                 this.prButtonText = '';
             },
-            createBranchAndPull: async function() {
+            createBranchAndPull: async function () {
                 if (!this.loginName) {
                     createPullError("Log in first!");
                     return;
@@ -899,13 +948,13 @@ function start() {
                     createPullError("TokenInput error");
                     return;
                 }
-            
+
                 this.prButtonText = "creating PR ...";
 
                 const branchName = newBranchName();
-            
+
                 addLog(`name: ${this.tokenInput.name}  type: ${this.tokenInput.type}  contract: ${this.tokenInput.contract}  branch ${branchName}`);
-            
+
                 this.prButtonText = "creating branch ...";
                 const branchRef = await createBranch(this.userToken, this.loginName, this.repo, branchName);
                 if (!branchRef) {
@@ -913,7 +962,7 @@ function start() {
                     return;
                 }
                 addLog(`Created branch ${this.loginName}/${this.repo}/${branchName}`);
-            
+
                 let stream = null;
                 if (this.tokenInput.logoStream && this.tokenInput.logoStream.length > 10) {
                     // stream is there, use that
@@ -923,13 +972,13 @@ function start() {
                     createPullError(`Could not retrieve logo contents`);
                     return;
                 }
-            
+
                 const chain = script.assets.chainFromType(this.tokenInput.type);
                 if (!chain || chain == "unknown") {
                     createPullError(`Could not retrieve chain from token type ${this.tokenInput.type}`);
                     return;
                 }
-            
+
                 this.prButtonText = "creatinging files ...";
                 const fileInfos = await createFiles(this.userToken, this.loginName, this.repo, `blockchains/${chain}/assets`, this.tokenInput.contract, stream, this.tokenInfo.infoString);
                 if (!fileInfos || fileInfos.length == 0) {
@@ -937,19 +986,19 @@ function start() {
                     return;
                 }
                 addLog(`Created ${fileInfos.length} new files`);
-            
+
                 const branchSha = await getBranchRef(this.userToken, this.loginName, this.repo, branchName);
                 if (!branchSha) {
                     createPullError(`Could not get ref for branch ${branchName}`);
                     return;
                 }
-            
+
                 const tree = await createTree(this.userToken, this.loginName, this.repo, branchSha, fileInfos);
                 if (!tree) {
                     createPullError(`Could not create tree with files`);
                     return;
                 }
-            
+
                 this.prButtonText = "creating commit ...";
                 const commit = await createCommit(this.userToken, this.loginName, this.repo, branchSha, tree, this.tokenInput.name);
                 if (!commit) {
@@ -957,13 +1006,13 @@ function start() {
                     return;
                 }
                 addLog(`Created new commit ${commit}`);
-            
+
                 const newBranchSha = await updateReference(this.userToken, this.loginName, this.repo, "heads/" + branchName, commit);
                 if (!newBranchSha) {
                     createPullError(`Could not update branch ${branchName} to commit ${commit}`);
                     return;
                 }
-            
+
                 this.prButtonText = "creating pull request ...";
                 const pullNumber = await createPull(this.userToken, this.loginName, this.repo, branchName, this.tokenInput.name, this.tokenInput.type, this.debugPrTargetFork);  // true for debug
                 if (!pullNumber) {
@@ -1033,18 +1082,17 @@ function start() {
                         <div>
                             <div>
                                 <logo-preview :logostream="tokenInput.logoStream" v-show="tokenInput.logoStream"
-                                    :tokenname="tokenInput.name" />
+                                    :tokenname="tokenInput.name.substring(0, 16)" />
                             </div>
                             <div>
                                 <button class="button"
                                     onclick="document.getElementById('input.file-selector').click();">Upload Logo</button>
                                 <input id="input.file-selector" type="file" style="display: none;"
                                     v-on:change="logoFileSelected()" />
-                                <span v-html="inputLogoText" id="input.logo-input" class="smallfont"></span>
+                                <span v-html="inputLogoFilename" v-bind:title="inputLogoDetails" id="input.logo-input" class="smallfont"></span>
                             </div>
-                            <div>
-                                <input v-model="tokenInput.name" class="input wide" placeholder="Token Name"
-                                            v-on:change="tokenInputChanged()" />
+                            <div class="smallfont error padded">
+                                {{errorLogo}} 
                             </div>
                             <div>
                                 <select v-model="tokenInput.type" class="input wide"
@@ -1058,34 +1106,47 @@ function start() {
                             </div>
                             <div><input v-model="tokenInput.contract" class="input"
                                             placeholder="Contract / ID" size="40"
-                                            v-on:change="tokenInputChanged()" /></div>
+                                            v-on:change="tokenInputContractChanged()" />
+                            </div>
+                            <div class="smallfont error padded">
+                                <span v-show="fixedContract"><a v-on:click="tokenInput.contract = fixedContract; tokenInputContractChanged()">Fix</a></span>
+                                {{errorContract}} 
+                            </div>
+                            <div>
+                                <input v-model="tokenInput.name" class="input wide" placeholder="Token Name"
+                                            v-on:change="tokenInputNameChanged()" />
+                            </div>
                             <div>
                                 <input v-model="tokenInput.website" class="input"
                                     placeholder="Website" size="40"
-                                    v-on:change="tokenInputChanged()" />
+                                    v-on:change="tokenInputWebsiteChanged()" />
+                            </div>
+                            <div class="smallfont error padded">
+                                <span v-show="fixedWebsite"><a v-on:click="tokenInput.website = fixedWebsite; tokenInputWebsiteChanged()">Fix</a></span>
+                                {{errorWebsite}} 
                             </div>
                             <div>
                                 <input v-model="tokenInput.explorerUrl" class="input"
                                     placeholder="Explorer URL"
-                                    size="40" v-on:change="tokenInputChanged()" />
+                                    size="40" v-on:change="tokenInputExplorerChanged()" />
                                     </td>
+                            </div>
+                            <div class="smallfont error padded">
+                                <span v-show="fixedExplorer"><a v-on:click="tokenInput.explorerUrl = fixedExplorer; tokenInputExplorerChanged()">Fix</a></span>
+                                {{errorExplorer}} 
                             </div>
                             <div>
                                 <textarea v-model="tokenInput.description" class="input wide"
                                             placeholder="Short description" rows="2"
-                                            v-on:change="tokenInputChanged()"></textarea>
+                                            v-on:change="tokenInputDescriptionChanged()"></textarea>
                             </div>
                             <div>
-                                <textarea v-model="tokenInputCheckResult" class="input wide smallfont"
-                                            rows="3"></textarea>
-                            </div>
-                            <div>
-                                <button class="button" type="button" v-on:click="createPullButton()">
-                                    {{prButtonText ? prButtonText : 'Create Pull Request'}}
-                                </button>
                                 <button class="button" type="button"
                                     v-on:click="checkInputButton()">
                                     {{checkButtonText ? checkButtonText : 'Check'}}
+                                </button>
+                                <button class="button" type="button" v-on:click="createPullButton()">
+                                    {{prButtonText ? prButtonText : 'Create Pull Request'}}
                                 </button>
                                 <button class="button" type="button" v-show="debugMode"
                                     v-on:click="clearInput()">Clear</button>
@@ -1186,7 +1247,7 @@ function start() {
                 this.version = await resp.text();
             }
             // leave it last, slower
-            this.repo = await checkRepo(this.userToken, this.loginName);
+            this.repo = await checkRepo(this.userToken, this.loginName, (r) => { this.repoSearchProgress += "."; });
             this.initialized = true;
         },
         data: {
@@ -1197,6 +1258,7 @@ function start() {
             version: '',
             activeTab: 'tab-add',
             maintainerMode: false,
+            repoSearchProgress: '.',
         },
         methods: {
             selectTab: async function (tab) {
@@ -1210,7 +1272,7 @@ function start() {
                 this.clearUser();
                 window.location.search = updateQueryParams('token', '');
             },
-            toggleMaintainerMode: async function() {
+            toggleMaintainerMode: async function () {
                 this.maintainerMode = this.maintainerMode ? false : true;
                 window.location.search = updateQueryParams('maintainer', this.maintainerMode ? '1' : '');
             },

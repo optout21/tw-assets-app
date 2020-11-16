@@ -77,58 +77,28 @@ export async function checkTokenInput(tokenInput: TokenInput, imgDimsCalc: Image
         res.push({ res: 0, msg: `Token type OK (${tokenInput.type})` });
     }
 
-    const [contrRes, contrFix] = checkTokenInputContract(tokenInput);
+    const [contrResNum, contrResMsg, contrFix] = checkTokenInputContract(tokenInput);
     if (contrFix) {
         if (!fixed) { fixed = tokenInput.clone(); }
         fixed.contract = contrFix;
     }
-    res.push(contrRes);
+    res.push({res: contrResNum, msg: contrResMsg});
 
-    (await checkTokenInputLogo(tokenInput, imgDimsCalc)).forEach(r => res.push(r));
+    (await checkTokenInputLogoInternal(tokenInput, imgDimsCalc)).forEach(r => res.push({res: r[0], msg: r[1]}));
 
-    if (!tokenInput.website) {
-        res.push({ res: 2, msg: "Website cannot be empty" });
-    } else {
-        try {
-            const result = await fetch(tokenInput.website);
-            if (result.status == 404) {
-                res.push({ res: 2, msg: `Website does not exist, status ${result.status}, url ${tokenInput.website}` });
-            } else if (result.status != 200) {
-                res.push({ res: 1, msg: `Could not check website availability, status ${result.status}, url ${tokenInput.website}` });
-            } else {
-                res.push({ res: 0, msg: `Website OK` });
-            }
-        } catch (error) {
-            // may be CORS, treat only as warning
-            res.push({ res: 1, msg: `Could not check website availability, error ${error}, url ${tokenInput.website}` });
-        }
+    const [webResNum, webResMsg, webFix] = await checkTokenInputWebsite(tokenInput);
+    if (webFix) {
+        if (!fixed) { fixed = tokenInput.clone(); }
+        fixed.website = webFix;
     }
+    res.push({res: webResNum, msg: webResMsg});
 
-    if (!tokenInput.explorerUrl) {
-        res.push({ res: 2, msg: "Explorer cannot be empty" });
-    } else {
-        try {
-            const result = await fetch(tokenInput.explorerUrl);
-            if (result.status == 404) {
-                res.push({ res: 2, msg: `ExplorerUrl does not exist, status ${result.status}, url ${tokenInput.explorerUrl}` });
-            } else if (result.status != 200) {
-                res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, status ${result.status}, url ${tokenInput.explorerUrl}` });
-            } else {
-                // check if explorer is what we would think
-                const guessedExplorer = explorerUrl(tokenInput.type, tokenInput.contract);
-                if (tokenInput.explorerUrl != guessedExplorer) {
-                    res.push({ res: 1, msg: `Recommended ExplorerUrl is ${guessedExplorer} instead of ${tokenInput.explorerUrl}` });
-                    if (!fixed) { fixed = tokenInput.clone(); }
-                    fixed.explorerUrl = guessedExplorer;
-                } else {
-                    res.push({ res: 0, msg: `ExplorerUrl OK` });
-                }
-            }
-        } catch (error) {
-            // may be CORS, treat only as warning
-            res.push({ res: 1, msg: `Could not check if ExplorerUrl exists, error ${error}, url ${tokenInput.explorerUrl}` });
-        }
+    const [explResNum, explResMsg, explFix] = await checkTokenInputExplorer(tokenInput);
+    if (explFix) {
+        if (!fixed) { fixed = tokenInput.clone(); }
+        fixed.explorerUrl = explFix;
     }
+    res.push({res: explResNum, msg: explResMsg});
 
     if (!tokenInput.description) {
         res.push({ res: 2, msg: "Short description cannot be empty" });
@@ -144,54 +114,113 @@ export async function checkTokenInput(tokenInput: TokenInput, imgDimsCalc: Image
     return [resnum, resmsg, fixed];
 }
 
-function checkTokenInputContract(tokenInput: TokenInput): [{ res: number, msg: string }, string] {
+export function checkTokenInputContract(tokenInput: TokenInput): [number, string, string] {
     if (!tokenInput.contract) {
-        return [{ res: 2, msg: "Contract/ID cannot be empty" }, null];
+        return [2, "Contract/ID cannot be empty", null];
     }
     if (tokenInput.type.toLowerCase() === "erc20" || tokenInput.type.toLowerCase() === "bep20") {
         if (!isEthereumAddress(tokenInput.contract)) {
-            return [{ res: 2, msg: `Contract is not a valid Ethereum address!` }, null];
+            return [2, `Contract is not a valid Ethereum address!`, null];
         }
         const inChecksum = toChecksum(tokenInput.contract);
         if (inChecksum !== tokenInput.contract) {
-            return [{ res: 2, msg: `Contract is not in checksum format, should be ${inChecksum}` }, inChecksum];
+            return [2, `Contract is not in checksum format, should be ${inChecksum}`, inChecksum];
         }
     }
-    return [{ res: 0, msg: `Contract/ID is OK` }, null];
+    return [0, `Contract/ID is OK`, null];
 }
 
-async function checkTokenInputLogo(tokenInput: TokenInput, imgDimsCalc: ImageDimensionsCalculator): Promise<{ res: number, msg: string }[]> {
-    let res: { res: number, msg: string }[] = [];
+export async function checkTokenInputWebsite(tokenInput: TokenInput): Promise<[number, string, string]> {
+    if (!tokenInput.website) {
+        return [2, "Website cannot be empty", null];
+    }
+    var website = tokenInput.website;
+    // should start with http
+    const prefix = 'https://';
+    if (!website.startsWith(prefix.substring(0, website.length))) {
+        const fixed = prefix + website;
+        return [2, `Website should start with '${prefix}', ${website}`, fixed];
+    }
+    try {
+        const result = await fetch(website);
+        if (result.status == 404) {
+            return [2, `Website does not exist, status ${result.status}, url ${website}`, null];
+        }
+        if (result.status != 200) {
+            return [1, `Could not check website availability, status ${result.status}, url ${website}`, null];
+        }
+    } catch (error) {
+        // may be CORS, treat only as warning
+        return [1, `Could not check website availability, error ${error}, url ${website}`, null];
+    }
+    return [0, `Website OK`, null];
+}
+
+export async function checkTokenInputExplorer(tokenInput: TokenInput): Promise<[number, string, string]> {
+    if (!tokenInput.explorerUrl) {
+        return [2, "Explorer cannot be empty", null];
+    }
+    const explorer = tokenInput.explorerUrl;
+    try {
+        const result = await fetch(explorer);
+        if (result.status == 404) {
+            return [2, `ExplorerUrl does not exist, status ${result.status}, url ${explorer}`, null];
+        }
+        if (result.status != 200) {
+            return [1, `Could not check if ExplorerUrl exists, status ${result.status}, url ${tokenInput.explorerUrl}`, null];
+        }
+        // check if explorer is what we would think
+        const guessedExplorer = explorerUrl(tokenInput.type, tokenInput.contract);
+        if (explorer != guessedExplorer) {
+            return [1, `Recommended ExplorerUrl is ${guessedExplorer} instead of ${explorer}`, guessedExplorer];
+        }
+    } catch (error) {
+        // may be CORS, treat only as warning
+        return [1, `Could not check if ExplorerUrl exists, error ${error}, url ${explorer}`, null];
+    }
+    return [0, `ExplorerUrl OK`, null];
+}
+
+async function checkTokenInputLogoInternal(tokenInput: TokenInput, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string][]> {
+    let res: [number, string][] = [];
 
     if (!tokenInput.logoStream || tokenInput.logoStream.length < 10) {
-        return [{ res: 2, msg: "Logo image may not be missing" }];
+        return [[2, "Logo image may not be missing"]];
     }
 
     if (tokenInput.logoStreamType && tokenInput.logoStreamType.toLowerCase() != "image/png") {
-        return [{ res: 2, msg: `Logo image must be PNG image (not ${tokenInput.logoStreamType})` }];
+        return [[2, `Logo image must be PNG image (not ${tokenInput.logoStreamType})`]];
     }
-    res.push({ res: 0, msg: `Logo image type is OK (${tokenInput.logoStreamType})` });
+    res.push([0, `Logo image type is OK (${tokenInput.logoStreamType})`]);
 
     if (tokenInput.logoStreamSize > 100000) {
-        res.push({ res: 2, msg: `Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB` });
+        res.push([2, `Logo image too large, max 100 kB, current ${tokenInput.logoStreamSize / 1000} kB`]);
     } else {
-        res.push({ res: 0, msg: `Logo image size is OK (${tokenInput.logoStreamSize / 1000} kB)` });
+        res.push([0, `Logo image size is OK (${tokenInput.logoStreamSize / 1000} kB)`]);
     }
 
     try {
         const logoDimension = await imgDimsCalc.get(null, tokenInput.logoStream);
         if (logoDimension.x == 0 && logoDimension.y == 0) {
-            res.push({ res: 2, msg: `Could not retrieve logo dimensions` });
+            res.push([2, `Could not retrieve logo dimensions`]);
         } else if (logoDimension.x > 512 || logoDimension.y > 512) {
-            res.push({ res: 2, msg: `Logo should be 256x256 pixels, it is too large ${logoDimension.x}x${logoDimension.y}` });
+            res.push([2, `Logo should be 256x256 pixels, it is too large ${logoDimension.x}x${logoDimension.y}`]);
         } else if (logoDimension.x < 128 || logoDimension.y < 128) {
-            res.push({ res: 2, msg: `Logo should be 256x256 pixels, it is too small ${logoDimension.x}x${logoDimension.y}` });
+            res.push([2, `Logo should be 256x256 pixels, it is too small ${logoDimension.x}x${logoDimension.y}`]);
         } else {
-            res.push({ res: 0, msg: `Logo dimensions OK (${logoDimension.x}x${logoDimension.y})` });
+            res.push([0, `Logo dimensions OK (${logoDimension.x}x${logoDimension.y})`]);
         }
     } catch (error) {
-        res.push({ res: 2, msg: `Could not retrieve logo dimensions (${error})` });
+        res.push([2, `Could not retrieve logo dimensions (${error})`]);
     }
 
     return res;
+}
+
+export async function checkTokenInputLogo(tokenInput: TokenInput, imgDimsCalc: ImageDimensionsCalculator): Promise<[number, string]> {
+    const logoRes = await checkTokenInputLogoInternal(tokenInput, imgDimsCalc);
+    let res2: { res: number, msg: string }[] = [];
+    logoRes.forEach((r) => res2.push({res: r[0], msg: r[1]}));
+    const [resnum, resmsg] = AggregateCheckResults(res2);
+    return [resnum, resmsg];
 }

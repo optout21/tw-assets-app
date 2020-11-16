@@ -11,8 +11,8 @@ Use cases
 Use cases -- contributor
 - Add new token
  -- Log on with GitHub account, optionally register, authorize app, create fork repo
- -- Enter details: name, type, contract, upload logo, info fields (website, desc, explorer, ...)
  -- Upload logo from local file
+ -- Enter details: type, contract, name, info fields (website, desc, explorer, ...)
  -- Most frequent token types supported: Ethereum ERC20, Binance BEP2 and BEP20 (smart chain), Tron TRC10 and TRC20
  -- Shwo logo preview
  -- Check info, logo; check circulation

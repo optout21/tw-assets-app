@@ -11,5 +11,9 @@ export {
 } from "./tokenInfo";
 export {
     TokenInput,
-    checkTokenInput
+    checkTokenInput,
+    checkTokenInputLogo,
+    checkTokenInputContract,
+    checkTokenInputWebsite,
+    checkTokenInputExplorer,
 } from "./tokenInput";
