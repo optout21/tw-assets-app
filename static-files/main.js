@@ -338,7 +338,7 @@ function start() {
             },
             opacity: function () { return this.dimmed ? 0.6 : 1; },
             roundedRadius: function () { return this.rounded ? "48%" : "0%" },
-            style: function () { return `opacity: ${this.opacity}; border-radius: ${this.roundedRadius};`; }
+            style: function () { return `max-width: 64; opacity: ${this.opacity}; border-radius: ${this.roundedRadius};`; }
         },
         data: function () {
             return {}
