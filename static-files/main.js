@@ -299,7 +299,8 @@ async function getPulls(userToken, owner, repo) {
     const result = await script.octoRequest("GET /repos/:owner/:repo/pulls", {
         headers: authHeaders(userToken),
         owner: owner,
-        repo: repo
+        repo: repo,
+        per_page: 100,
     });
     return result.data;
 }
