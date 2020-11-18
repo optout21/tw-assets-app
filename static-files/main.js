@@ -67,8 +67,13 @@ async function checkUser(userToken) {
 }
 
 
-async function getUserRepos(userToken) {
-    const result = await script.octoRequest("GET /user/repos", { headers: authHeaders(userToken) });
+async function getUserRepos(userToken, page) {
+    const result = await script.octoRequest("GET /user/repos", {
+        headers: authHeaders(userToken),
+        page: page,
+        per_page: 100,
+    });
+    //console.log(result);
     return result.data;
 }
 
@@ -81,46 +86,61 @@ async function getRepo(userToken, owner, repo) {
     return result.data;
 }
 
+async function isRepoForkOfAssets(repoName, parentRepoFullName, userToken, loginName) {
+    try {
+        const r2 = await getRepo(userToken, loginName, repoName);
+        if (r2 && r2.parent && r2.parent.full_name === parentRepoFullName) {
+            return true;
+        }
+    } catch (error) {
+        addLog(`Error: ${repoName} ${error}`);
+    }
+    return false;
+}
+
 async function checkRepo(userToken, loginName, progressCallback) {
     if (!userToken || !loginName) {
         return null;
     }
-    const repos = await getUserRepos(userToken);
-    if (!repos || repos.length == 0) {
+
+    // try repo named 'assets' directly
+    if (await isRepoForkOfAssets(mainRepoName, mainRepoFullName, userToken, loginName)) {
+        addLog(`Fork repo found fast, ${loginName} ${mainRepoName}`);
+        return mainRepoName;
+    }
+
+    // enumerate all repos of user
+    var page = 1;
+    var reposGotCount = 0;
+    var reposCheckedCount = 0;
+    while (page < 10) {
+        const repos = await getUserRepos(userToken, page);
+        if (!repos || repos.length == 0) {
+            break;
+        }
+        // try all repos
+        reposGotCount += repos.length;
+        for (const r of repos) {
+            reposCheckedCount += 1;
+            try {
+                if (progressCallback) { progressCallback(r.name); }
+                if (r && r.fork && r.name) {
+                    if (await isRepoForkOfAssets(r.name, mainRepoFullName, userToken, loginName)) {
+                        addLog(`Fork repo found, ${loginName} ${r.name} (checked ${reposCheckedCount}/${reposGotCount})`);
+                        return r.name;
+                    }
+                }
+            } catch (error) {
+                addLog(`Error: ${r.name} ${error}`);
+            }
+        }
+        page += 1;
+    }
+    if (reposGotCount == 0) {
         addLog(`Warning: No repositories found for user ${loginName}`);
-        return null;
+    } else {
+        addLog(`Warning: Fork repo not found, checked ${reposGotCount} repos of user ${loginName}`);
     }
-    // first try under 'assets' name
-    for (const r of repos) {
-        try {
-            if (progressCallback) { progressCallback(r.name); }
-            if (r && r.fork && r.name === mainRepoName) {
-                const r2 = await getRepo(userToken, loginName, r.name);
-                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
-                    addLog(`Fork repo found, ${loginName} ${r.name}`);
-                    return r.name;
-                }
-            }
-        } catch (error) {
-            addLog(`Error: ${r.name} ${error}`);
-        }
-    }
-    // try again all others
-    for (const r of repos) {
-        try {
-            if (progressCallback) { progressCallback(r.name); }
-            if (r && r.fork) {
-                const r2 = await getRepo(userToken, loginName, r.name);
-                if (r2 && r2.parent && r2.parent.full_name === mainRepoFullName) {
-                    addLog(`Fork repo found, ${loginName} ${r.name}`);
-                    return r.name;
-                }
-            }
-        } catch (error) {
-            addLog(`Error: ${r.name} ${error}`);
-        }
-    }
-    addLog(`Warning: Fork repo not found, checked ${repos.length} repos of user ${loginName}`);
     return null;
 }
 
