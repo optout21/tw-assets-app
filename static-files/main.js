@@ -1,4 +1,4 @@
-const appName = "TW Asets Management";
+const appName = "TW Assets Management";
 const appNameHtml = `<a href="https://assets.trustwallet.com">${appName}</a>`;
 const gitHub = "https://github.com";
 const mainRepoOwner = "trustwallet";
