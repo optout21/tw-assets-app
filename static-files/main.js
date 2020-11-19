@@ -1300,7 +1300,6 @@ function start() {
     var app = new Vue({
         el: '#app',
         async created() {
-            this.initialized = false;
             this.userToken = getTokenQP();
             this.loginName = await checkUser(this.userToken);
             this.maintainerMode = getQueryParam("maintainer");
@@ -1310,6 +1309,9 @@ function start() {
             }
             // leave it last, slower
             this.repo = await checkRepo(this.userToken, this.loginName, (r) => { this.repoSearchProgress += "."; });
+            // Vue v-show-based conditional display causes bad flicker at inital loading, while Vue is compiled;
+            // hidden blocks are shown during load.   Use old-fashioned getElementById to show main elements after initialization.
+            document.getElementById('main-init').style = "display: block;";
             this.initialized = true;
         },
         data: {

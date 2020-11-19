@@ -20,30 +20,27 @@
 
 <body onload="start()">
     <span id="app">
-        <div id="header" class="padded flexrow">
-            <span id="menu-left" class="flexrow padded">
-                <img src="img/trust_logotype.svg" />
-            </span>
-            <span id="menu-right" class="padded">
-                <span v-show="!userToken">
-                    <button v-on:click="window.location.href = loginActionUrl()">Log in with GitHub</button>
-                </span>
-                <span v-show="userToken">
-                    <button v-on:click="logout()">Logged in as {{loginName}}</button>
-                </span>
-            </span>
-        </div>
-        <div>
-            <div id="loading" class="main" v-show="!initialized">
-                <div class="mainheader">Loading...</div>
-                <div class="center smallfont">
-                    <div>user name: {{loginName ? loginName : "..."}}</div>
-                    <div>repository: {{repo ? repo : repoSearchProgress}}</div>
-                    <div>user token: {{userToken ? userToken : "..."}}</div>
-                    <div>version: {{version ? version : "..."}}</div>
-                </div>
+        <div id="loading" v-if="!initialized">
+            <div class="mainheader padded">Loading...</div>
+            <div class="center smallfont padded">
+                <div v-text="repoSearchProgress"></div>
             </div>
-            <div v-show="initialized">
+        </div>
+        <div id="main-init" style="display: none;">
+            <div id="header" class="padded flexrow">
+                <span id="menu-left" class="flexrow padded">
+                    <img src="img/trust_logotype.svg" />
+                </span>
+                <span id="menu-right" class="padded">
+                    <span v-show="!userToken">
+                        <button v-on:click="window.location.href = loginActionUrl()">Log in with GitHub</button>
+                    </span>
+                    <span v-show="userToken">
+                        <button v-on:click="logout()" v-text="`Logged in as ${loginName}`"></button>
+                    </span>
+                </span>
+            </div>
+            <div>
                 <div id="main-ifnouser" class="main center" v-show="!userToken">
                     <div class="mainheader">Not logged in</div>
                     <div class="center">
@@ -92,16 +89,16 @@
                     <img id="image-placeholder-for-size-computation" src="img/emptylogo.png" />
                 </div>
             </div>
-        </div>
-        <div id="footer" class="padded">
-            <span id="footer-left" class="padded">
-            </span>
-            <span id="footer-right" class="padded">
-                <span v-show="maintainerMode">
-                    <span id="version" class="smallfont">v{{version}}</span>
+            <div id="footer" class="padded">
+                <span id="footer-left" class="padded">
                 </span>
-                <!-- button v-show="userToken" v-on:click="toggleMaintainerMode">{{this.maintainerMode ? 'Contributor Mode' : 'Maintainer Mode'}}</button -->
-            </span>
+                <span id="footer-right" class="padded">
+                    <span v-show="maintainerMode">
+                        <span id="version" class="smallfont" v-text="version"></span>
+                    </span>
+                    <!-- button v-show="userToken" v-on:click="toggleMaintainerMode">{{this.maintainerMode ? 'Contributor Mode' : 'Maintainer Mode'}}</button -->
+                </span>
+            </div>
         </div>
     </span>
 </body>

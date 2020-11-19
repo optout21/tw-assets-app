@@ -4,6 +4,7 @@ body {
   background: linear-gradient(131.62deg, #3375BB 9.39%, #1B63AF 73.53%);
   line-height: 1.25;
   color: #303030;
+  padding: 0 0 500px 0;
 }
 h1 {
   color: #38659e;
@@ -30,6 +31,9 @@ button {
 .main button {
   color: white;
   background: #1E2026;
+}
+#loading {
+  padding: 100px 0 1000px 0;
 }
 .input {
   font-size: 105%;
