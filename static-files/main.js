@@ -31,10 +31,6 @@ function authHeaders(userToken) {
     return { authorization: `token ${userToken}` };
 }
 
-function loginActionUrl() {
-    return `/githubLoginRedirect`;
-}
-
 function getQueryParam(param) {
     var urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(param);
@@ -458,6 +454,7 @@ function start() {
         data: function () {
             return {
                 circulationHolders: '',
+                script: script,
             }
         },
         updated: async function () {
@@ -606,6 +603,8 @@ function start() {
         data: function () {
             return {
                 selectedToken: Object,
+                mainRepoFullName: mainRepoFullName,
+                gitHub: gitHub,
             }
         },
         async updated() {
@@ -650,18 +649,19 @@ function start() {
     Vue.component('pulls-list', {
         props: {
             userToken: String,
-            enabled: String,
+            enabled: Boolean,
         },
         data: function () {
             return {
                 pulls: Array,
                 selected: Object,
                 selectedPullTokenIds: Array,
+                script: script,
             }
         },
         async created() {
             // enabled is set delayed, check queryparam here directly
-            maintainerMode = getQueryParam("maintainer");
+            maintainerMode = getQueryParam("maintainer") ? true : false;
             if (this.enabled || maintainerMode) {
                 await this.loadOpenPrs();
             }
@@ -729,6 +729,7 @@ function start() {
         methods: {
             onclick: function () {
                 this.$emit('select', this.token);
+                //console.log("token", this.token.token_id, this.token);
             }
         },
         computed: {
@@ -779,6 +780,7 @@ function start() {
             },
             onselecttoken: async function (token) {
                 this.selected = token;
+                //console.log("selected", this.selected, this.selected.type, this.selected.type.token_id);
                 this.$emit('selecttoken', this.selected);
             },
         },
@@ -805,6 +807,7 @@ function start() {
         },
         data: function () {
             return {
+                script: script,
                 tokenInput: new script.assets.TokenInput(),
                 errorLogo: ' ',
                 errorContract: ' ',
@@ -821,6 +824,8 @@ function start() {
                 tokenInfo: new script.assets.TokenInfo(),
                 checkButtonText: '',
                 prButtonText: '',
+                mainRepoUrl: mainRepoUrl,
+                gitHub: gitHub,
             }
         },
         async created() {
@@ -1236,7 +1241,7 @@ function start() {
             userToken: String,
             loginName: String,
             repo: String,
-            enabled: String,
+            enabled: Boolean,
         },
         data: function () {
             return {
@@ -1274,6 +1279,7 @@ function start() {
         data: function () {
             return {
                 tokenInfo: new script.assets.TokenInfo(),
+                script: script,
             }
         },
         methods: {
@@ -1302,7 +1308,7 @@ function start() {
         async created() {
             this.userToken = getTokenQP();
             this.loginName = await checkUser(this.userToken);
-            this.maintainerMode = getQueryParam("maintainer");
+            this.maintainerMode = getQueryParam("maintainer") ? true : false;
             const resp = await fetch("/get-version");
             if (resp.status == 200) {
                 this.version = await resp.text();
@@ -1323,6 +1329,11 @@ function start() {
             activeTab: 'tab-add',
             maintainerMode: false,
             repoSearchProgress: '.',
+            mainRepoName: mainRepoName,
+            mainRepoFullName: mainRepoFullName,
+            mainRepoUrl: mainRepoUrl,
+            gitHub, gitHub,
+            window: window,
         },
         methods: {
             selectTab: async function (tab) {
@@ -1339,6 +1350,9 @@ function start() {
             toggleMaintainerMode: async function () {
                 this.maintainerMode = this.maintainerMode ? false : true;
                 window.location.search = updateQueryParams('maintainer', this.maintainerMode ? '1' : '');
+            },
+            loginActionUrl: function () {
+                return `/githubLoginRedirect`;
             },
         }
     });
