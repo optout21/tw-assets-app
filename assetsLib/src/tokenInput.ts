@@ -35,7 +35,7 @@ export class TokenInput {
         tokenInfo.info = {
             name: this.name,
             website: this.website,
-            short_description: this.description,
+            description: this.description,
             explorer: this.explorerUrl,
         };
         tokenInfo.infoString = JSON.stringify(tokenInfo.info, null, 4);

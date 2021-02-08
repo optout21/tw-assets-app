@@ -228,7 +228,7 @@ export async function checkTokenInfo(tokenInfo: TokenInfo, urlChecker: UrlChecke
             }
         }
 
-        if (!tokenInfo.info["short_description"]) {
+        if (!tokenInfo.info["description"]) {
             res.push({ res: 2, msg: "Short description cannot be empty" });
         } else {
             res.push({ res: 0, msg: "Description OK" });
